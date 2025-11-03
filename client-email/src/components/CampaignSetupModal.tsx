@@ -495,24 +495,26 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
   const selectedSendersList = senders.filter(s => selectedSenders.includes(s.email));
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={(e) => {
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-2 sm:p-4" onClick={(e) => {
       if (e.target === e.currentTarget) onClose();
     }}>
-      <div className="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between z-10">
-          <h2 className="text-xl font-semibold text-gray-800">
+      <div className="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b border-gray-200 p-4 sm:p-6 flex items-center justify-between z-10">
+          <h2 className="text-base sm:text-xl font-semibold text-gray-800 truncate pr-2">
             <i className="fas fa-cog mr-2"></i>
-            Setup Campaign: {campaign.name}
+            <span className="hidden sm:inline">Setup Campaign: </span>
+            <span className="sm:hidden">Setup: </span>
+            {campaign.name}
           </h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 transition-colors">
-            <i className="fas fa-times text-xl"></i>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 transition-colors flex-shrink-0">
+            <i className="fas fa-times text-lg sm:text-xl"></i>
           </button>
         </div>
 
         {/* Setup Progress */}
-        <div className="p-6 bg-gray-50 border-b border-gray-200">
-          <h4 className="font-semibold text-gray-800 mb-4">Setup Progress:</h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="p-4 sm:p-6 bg-gray-50 border-b border-gray-200">
+          <h4 className="font-semibold text-sm sm:text-base text-gray-800 mb-3 sm:mb-4">Setup Progress:</h4>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
             {[
               { id: 'step-senders', label: 'Select Senders', completed: progressSteps['step-senders'] },
               { id: 'step-leads', label: 'Upload Leads', completed: progressSteps['step-leads'] },
@@ -521,10 +523,10 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
             ].map((step) => (
               <div
                 key={step.id}
-                className={`flex items-center gap-2 text-sm ${step.completed ? 'text-green-600' : 'text-gray-600'}`}
+                className={`flex items-center gap-1 sm:gap-2 text-xs sm:text-sm ${step.completed ? 'text-green-600' : 'text-gray-600'}`}
               >
-                <i className={`fas ${step.completed ? 'fa-check-circle text-green-600' : 'fa-circle'}`}></i>
-                <span>{step.label}</span>
+                <i className={`fas text-xs sm:text-sm ${step.completed ? 'fa-check-circle text-green-600' : 'fa-circle'}`}></i>
+                <span className="truncate">{step.label}</span>
               </div>
             ))}
           </div>
@@ -541,24 +543,24 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-6 py-3 font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
+              className={`px-3 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-medium transition-colors whitespace-nowrap flex items-center gap-1 sm:gap-2 ${
                 activeTab === tab.id
                   ? 'border-b-2 border-[#667eea] text-[#667eea]'
                   : 'text-gray-600 hover:text-gray-800'
               }`}
             >
-              <i className={`fas ${tab.icon}`}></i>
+              <i className={`fas ${tab.icon} text-xs sm:text-sm`}></i>
               {tab.label}
             </button>
           ))}
         </div>
 
         {/* Tab Content */}
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {/* Senders Tab */}
           {activeTab === 'senders' && (
-            <div className="space-y-6">
-              <h4 className="font-semibold text-gray-800">Select Sender Emails for this Campaign:</h4>
+            <div className="space-y-4 sm:space-y-6">
+              <h4 className="font-semibold text-sm sm:text-base text-gray-800">Select Sender Emails for this Campaign:</h4>
               <div className="space-y-2">
                 {availableSenders.length === 0 ? (
                   <p className="text-gray-500">All senders are selected</p>
@@ -566,20 +568,20 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
                   availableSenders.map((sender) => (
                     <div
                       key={sender.email}
-                      className={`bg-gray-50 p-4 rounded-lg flex items-center justify-between hover:bg-gray-100 transition-colors ${
+                      className={`bg-gray-50 p-3 sm:p-4 rounded-lg flex items-center justify-between hover:bg-gray-100 transition-colors ${
                         togglingSender ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
                       }`}
                       onClick={() => !togglingSender && toggleSender(sender.email)}
                     >
-                      <div className="flex items-center gap-3">
-                        <i className="fas fa-envelope text-[#667eea]"></i>
-                        <div>
-                          <strong className="text-gray-800">{sender.email}</strong>
-                          {sender.name && <div className="text-sm text-gray-600">{sender.name}</div>}
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                        <i className="fas fa-envelope text-[#667eea] flex-shrink-0"></i>
+                        <div className="min-w-0 flex-1">
+                          <strong className="text-sm sm:text-base text-gray-800 block truncate">{sender.email}</strong>
+                          {sender.name && <div className="text-xs sm:text-sm text-gray-600 truncate">{sender.name}</div>}
                         </div>
                       </div>
                       <button 
-                        className="px-3 py-1 bg-[#667eea] text-white rounded-lg hover:opacity-90 text-sm"
+                        className="px-2 sm:px-3 py-1 bg-[#667eea] text-white rounded-lg hover:opacity-90 text-xs sm:text-sm flex-shrink-0"
                         disabled={togglingSender}
                       >
                         <i className="fas fa-plus"></i>
@@ -589,28 +591,28 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
                 )}
               </div>
 
-              <h4 className="font-semibold text-gray-800 mt-6">Selected Senders:</h4>
+              <h4 className="font-semibold text-sm sm:text-base text-gray-800 mt-4 sm:mt-6">Selected Senders:</h4>
               <div className="space-y-2">
                 {selectedSendersList.length === 0 ? (
-                  <p className="text-gray-500">No senders selected yet</p>
+                  <p className="text-xs sm:text-sm text-gray-500">No senders selected yet</p>
                 ) : (
                   selectedSendersList.map((sender) => (
                     <div
                       key={sender.email}
-                      className={`bg-green-50 border-l-3 border-green-500 p-4 rounded-lg flex items-center justify-between hover:bg-green-100 transition-colors ${
+                      className={`bg-green-50 border-l-3 border-green-500 p-3 sm:p-4 rounded-lg flex items-center justify-between hover:bg-green-100 transition-colors ${
                         togglingSender ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
                       }`}
                       onClick={() => !togglingSender && toggleSender(sender.email)}
                     >
-                      <div className="flex items-center gap-3">
-                        <i className="fas fa-envelope text-green-600"></i>
-                        <div>
-                          <strong className="text-gray-800">{sender.email}</strong>
-                          {sender.name && <div className="text-sm text-gray-600">{sender.name}</div>}
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                        <i className="fas fa-envelope text-green-600 flex-shrink-0"></i>
+                        <div className="min-w-0 flex-1">
+                          <strong className="text-sm sm:text-base text-gray-800 block truncate">{sender.email}</strong>
+                          {sender.name && <div className="text-xs sm:text-sm text-gray-600 truncate">{sender.name}</div>}
                         </div>
                       </div>
                       <button 
-                        className="px-3 py-1 bg-red-500 text-white rounded-lg hover:opacity-90 text-sm"
+                        className="px-2 sm:px-3 py-1 bg-red-500 text-white rounded-lg hover:opacity-90 text-xs sm:text-sm flex-shrink-0"
                         disabled={togglingSender}
                       >
                         <i className="fas fa-minus"></i>
@@ -624,8 +626,8 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
 
           {/* Leads Tab */}
           {activeTab === 'leads' && (
-            <div className="space-y-5">
-              <h4 className="font-semibold text-gray-800">Upload Leads for this Campaign:</h4>
+            <div className="space-y-4 sm:space-y-5">
+              <h4 className="font-semibold text-sm sm:text-base text-gray-800">Upload Leads for this Campaign:</h4>
               
               <div className="space-y-4">
                 <div className="flex flex-col gap-3">
@@ -655,7 +657,7 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
 
                 {leadsUploadMode === 'new' && !leadsPreview && (
                   <div
-                    className="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center cursor-pointer hover:border-[#667eea] hover:bg-gray-50 transition-colors"
+                    className="border-2 border-dashed border-gray-300 rounded-xl p-6 sm:p-12 text-center cursor-pointer hover:border-[#667eea] hover:bg-gray-50 transition-colors"
                     onClick={() => leadsFileInputRef.current?.click()}
                   >
                     <input
@@ -665,9 +667,9 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
                       className="hidden"
                       onChange={handleLeadsFileChange}
                     />
-                    <i className="fas fa-cloud-upload-alt text-4xl text-[#667eea] mb-3"></i>
-                    <p className="font-semibold text-gray-700">Click to upload or drag and drop</p>
-                    <small className="text-gray-500">CSV files only</small>
+                    <i className="fas fa-cloud-upload-alt text-3xl sm:text-4xl text-[#667eea] mb-2 sm:mb-3"></i>
+                    <p className="font-semibold text-sm sm:text-base text-gray-700">Click to upload or drag and drop</p>
+                    <small className="text-xs sm:text-sm text-gray-500">CSV files only</small>
                   </div>
                 )}
 
@@ -676,7 +678,7 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
                     <select
                       value={selectedExistingLead}
                       onChange={(e) => setSelectedExistingLead(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
+                      className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
                     >
                       <option value="">Select existing lead file...</option>
                       {existingLeads.map((lead) => (
@@ -688,7 +690,7 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
                     <button
                       type="button"
                       onClick={handleUseExistingLeads}
-                      className="px-4 py-2 bg-[#667eea] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
+                      className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base bg-[#667eea] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                     >
                       <i className="fas fa-check"></i> Use Selected Leads
                     </button>
@@ -696,15 +698,15 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
                 )}
 
                 {leadsPreview && (
-                  <div className="bg-gray-50 p-5 rounded-lg">
-                    <h4 className="font-semibold text-gray-800 mb-3">Preview:</h4>
-                    <div
+                  <div className="bg-gray-50 p-3 sm:p-5 rounded-lg">
+                    <h4 className="font-semibold text-sm sm:text-base text-gray-800 mb-2 sm:mb-3">Preview:</h4>
+                    <div className="overflow-x-auto"
                       dangerouslySetInnerHTML={{ __html: displayLeadsPreviewTable(leadsPreview) }}
                     />
                     <button
                       type="button"
                       onClick={handleRemoveLeads}
-                      className="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
+                      className="mt-3 sm:mt-4 w-full sm:w-auto px-4 py-2 text-sm sm:text-base bg-red-500 text-white rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                     >
                       <i className="fas fa-trash"></i> Remove Leads
                     </button>
@@ -716,8 +718,8 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
 
           {/* Template Tab */}
           {activeTab === 'template' && (
-            <div className="space-y-5">
-              <h4 className="font-semibold text-gray-800">Upload Email Template for this Campaign:</h4>
+            <div className="space-y-4 sm:space-y-5">
+              <h4 className="font-semibold text-sm sm:text-base text-gray-800">Upload Email Template for this Campaign:</h4>
               
               <div className="space-y-4">
                 <div className="flex flex-col gap-3">
@@ -747,7 +749,7 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
 
                 {templateUploadMode === 'new' && !templatePreview && (
                   <div
-                    className="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center cursor-pointer hover:border-[#667eea] hover:bg-gray-50 transition-colors"
+                    className="border-2 border-dashed border-gray-300 rounded-xl p-6 sm:p-12 text-center cursor-pointer hover:border-[#667eea] hover:bg-gray-50 transition-colors"
                     onClick={() => templateFileInputRef.current?.click()}
                   >
                     <input
@@ -757,9 +759,9 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
                       className="hidden"
                       onChange={handleTemplateFileChange}
                     />
-                    <i className="fas fa-cloud-upload-alt text-4xl text-[#667eea] mb-3"></i>
-                    <p className="font-semibold text-gray-700">Click to upload or drag and drop</p>
-                    <small className="text-gray-500">HTML files only</small>
+                    <i className="fas fa-cloud-upload-alt text-3xl sm:text-4xl text-[#667eea] mb-2 sm:mb-3"></i>
+                    <p className="font-semibold text-sm sm:text-base text-gray-700">Click to upload or drag and drop</p>
+                    <small className="text-xs sm:text-sm text-gray-500">HTML files only</small>
                   </div>
                 )}
 
@@ -768,7 +770,7 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
                     <select
                       value={selectedExistingTemplate}
                       onChange={(e) => setSelectedExistingTemplate(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
+                      className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
                     >
                       <option value="">Select existing template...</option>
                       {existingTemplates.map((template) => (
@@ -780,7 +782,7 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
                     <button
                       type="button"
                       onClick={handleUseExistingTemplate}
-                      className="px-4 py-2 bg-[#667eea] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
+                      className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base bg-[#667eea] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                     >
                       <i className="fas fa-check"></i> Use Selected Template
                     </button>
@@ -788,28 +790,28 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
                 )}
 
                 {templatePreview && (
-                  <div className="bg-gray-50 p-5 rounded-lg">
-                    <h4 className="font-semibold text-gray-800 mb-3">Preview:</h4>
-                    <div className="mb-3">
+                  <div className="bg-gray-50 p-3 sm:p-5 rounded-lg">
+                    <h4 className="font-semibold text-sm sm:text-base text-gray-800 mb-2 sm:mb-3">Preview:</h4>
+                    <div className="mb-2 sm:mb-3">
                       {templatePreview.includes('track/open?email=') || templatePreview.includes('track/open') ? (
-                        <div className="bg-green-100 border border-green-500 rounded-lg p-3 text-sm text-green-800">
+                        <div className="bg-green-100 border border-green-500 rounded-lg p-2 sm:p-3 text-xs sm:text-sm text-green-800">
                           <i className="fas fa-check-circle mr-2"></i>
                           <strong>✅ Tracking Pixel Injected</strong> - Your template includes email open tracking.
                         </div>
                       ) : (
-                        <div className="bg-yellow-100 border border-yellow-500 rounded-lg p-3 text-sm text-yellow-800">
+                        <div className="bg-yellow-100 border border-yellow-500 rounded-lg p-2 sm:p-3 text-xs sm:text-sm text-yellow-800">
                           <i className="fas fa-exclamation-triangle mr-2"></i>
                           <strong>⚠️ No Tracking Pixel Found</strong> - Tracking may not work.
                         </div>
                       )}
                     </div>
-                    <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-xs max-h-60 overflow-y-auto">
+                    <pre className="bg-gray-900 text-gray-100 p-2 sm:p-4 rounded-lg overflow-x-auto text-xs max-h-40 sm:max-h-60 overflow-y-auto">
                       {templatePreview.length > 500 ? templatePreview.substring(0, 500) + '...' : templatePreview}
                     </pre>
                     <button
                       type="button"
                       onClick={handleRemoveTemplate}
-                      className="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
+                      className="mt-3 sm:mt-4 w-full sm:w-auto px-4 py-2 text-sm sm:text-base bg-red-500 text-white rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                     >
                       <i className="fas fa-trash"></i> Remove Template
                     </button>
@@ -821,9 +823,9 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
 
           {/* Settings Tab */}
           {activeTab === 'settings' && (
-            <form onSubmit={handleSaveSettings} className="space-y-5">
+            <form onSubmit={handleSaveSettings} className="space-y-4 sm:space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">Campaign Start Options:</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2 sm:mb-3">Campaign Start Options:</label>
                 <div className="flex flex-col gap-3">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -879,7 +881,7 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
                     type="date"
                     value={settings.schedule_date}
                     onChange={(e) => setSettings({ ...settings, schedule_date: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
                   />
                 </div>
               )}
@@ -891,7 +893,7 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
                     type="time"
                     value={settings.schedule_time}
                     onChange={(e) => setSettings({ ...settings, schedule_time: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
                   />
                 </div>
               )}
@@ -905,12 +907,12 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
                   value={settings.subject_line}
                   onChange={(e) => setSettings({ ...settings, subject_line: e.target.value })}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
+                  className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
                   placeholder="Your email subject..."
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Daily Limit (emails per sender)
@@ -951,7 +953,7 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
                     min="1"
                     max="500"
                     placeholder="120"
-                    className="no-spinners w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
+                    className="no-spinners w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
                   />
                   <p className="text-xs text-gray-500 mt-1">Enter a value between 1 and 500 emails per sender per day</p>
                 </div>
@@ -962,7 +964,7 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
                   <select
                     value={settings.delay}
                     onChange={(e) => setSettings({ ...settings, delay: parseInt(e.target.value) })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
                   >
                     <option value="15">15 seconds</option>
                     <option value="30">30 seconds</option>
@@ -974,7 +976,7 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
 
               <button
                 type="submit"
-                className="px-6 py-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
+                className="w-full sm:w-auto px-4 sm:px-6 py-2 text-sm sm:text-base bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
               >
                 <i className="fas fa-save"></i> Save Settings
               </button>
@@ -983,10 +985,10 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
         </div>
 
         {/* Modal Footer */}
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 flex justify-end">
+        <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 sm:p-6 flex justify-end">
           <button
             onClick={onClose}
-            className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors flex items-center gap-2"
+            className="w-full sm:w-auto px-4 sm:px-6 py-2 text-sm sm:text-base bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors flex items-center justify-center gap-2"
           >
             <i className="fas fa-times"></i> Close Setup
           </button>

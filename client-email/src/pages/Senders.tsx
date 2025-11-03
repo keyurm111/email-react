@@ -287,22 +287,24 @@ export const Senders = () => {
   return (
     <Layout>
       {/* Add Gmail Sender */}
-      <section className="bg-white rounded-xl shadow-md mb-6">
+      <section className="bg-white rounded-xl shadow-md mb-4 sm:mb-6">
         <div className={`border-b ${gmailFormOpen ? 'border-gray-200' : ''}`}>
           <div
-            className="p-6 cursor-pointer hover:bg-gray-50 transition-colors flex items-center justify-between select-none"
+            className="p-4 sm:p-6 cursor-pointer hover:bg-gray-50 transition-colors flex items-center justify-between select-none"
             onClick={() => setGmailFormOpen(!gmailFormOpen)}
           >
-            <h3 className="font-semibold text-gray-800 flex items-center gap-2 text-lg">
-              <i className="fas fa-plus-circle"></i> Add New Gmail Sender
+            <h3 className="font-semibold text-gray-800 flex items-center gap-2 text-base sm:text-lg">
+              <i className="fas fa-plus-circle"></i> 
+              <span className="hidden sm:inline">Add New Gmail Sender</span>
+              <span className="sm:hidden">Gmail Sender</span>
             </h3>
-            <i className={`fas fa-chevron-down transition-transform duration-300 ${gmailFormOpen ? 'transform rotate-180' : ''}`}></i>
+            <i className={`fas fa-chevron-down transition-transform duration-300 text-sm ${gmailFormOpen ? 'transform rotate-180' : ''}`}></i>
           </div>
         </div>
         {gmailFormOpen && (
-          <div className="p-6">
-            <form onSubmit={editingSender?.type === 'gmail' ? handleUpdate : handleAddGmail} className="space-y-5">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="p-4 sm:p-6">
+            <form onSubmit={editingSender?.type === 'gmail' ? handleUpdate : handleAddGmail} className="space-y-4 sm:space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Sender Email *
@@ -313,7 +315,7 @@ export const Senders = () => {
                     defaultValue={editingSender?.email || ''}
                     disabled={!!editingSender}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
                     placeholder="your@gmail.com"
                   />
                 </div>
@@ -325,7 +327,7 @@ export const Senders = () => {
                     type="text"
                     name="name"
                     defaultValue={editingSender?.name || ''}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
                     placeholder="e.g., John Doe, Company Name"
                   />
                   <small className="text-gray-500 text-xs mt-1 block">This will appear as the sender name in emails</small>
@@ -341,15 +343,15 @@ export const Senders = () => {
                     name="password"
                     defaultValue={editingSender?.password || ''}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea] pr-12"
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea] pr-10 sm:pr-12"
                     placeholder="16-character app password"
                   />
                   <button
                     type="button"
                     onClick={() => togglePasswordVisibility('gmailPassword')}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 px-3 py-1 text-gray-600 hover:text-gray-800"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 px-2 sm:px-3 py-1 text-gray-600 hover:text-gray-800"
                   >
-                    <i className={`fas ${showPassword['gmailPassword'] ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                    <i className={`fas text-sm ${showPassword['gmailPassword'] ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                   </button>
                 </div>
                 <small className="text-gray-500 text-xs mt-1 block">
@@ -357,17 +359,18 @@ export const Senders = () => {
                   Enter your Gmail app password. Spaces are allowed and will be preserved.
                 </small>
               </div>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <strong className="text-blue-900 block mb-2">💡 App Password Tips:</strong>
-                <ul className="list-disc list-inside text-sm text-blue-800 space-y-1">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
+                <strong className="text-blue-900 block mb-2 text-sm sm:text-base">💡 App Password Tips:</strong>
+                <ul className="list-disc list-inside text-xs sm:text-sm text-blue-800 space-y-1">
                   <li>Use Gmail app passwords (not your regular password)</li>
                   <li>Spaces in app passwords are allowed</li>
                   <li>Enable 2-factor authentication first</li>
                 </ul>
               </div>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <button
                 type="submit"
-                className="px-6 py-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-2 text-sm sm:text-base bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
               >
                 <i className="fas fa-plus"></i>
                 {editingSender ? 'Update Sender' : 'Add Sender'}
@@ -376,33 +379,36 @@ export const Senders = () => {
                 <button
                   type="button"
                   onClick={handleCloseEdit}
-                  className="ml-2 px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+                    className="w-full sm:w-auto px-4 sm:px-6 py-2 text-sm sm:text-base bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
                 >
                   Cancel
                 </button>
               )}
+              </div>
             </form>
           </div>
         )}
       </section>
 
       {/* Add SMTP Sender */}
-      <section className="bg-white rounded-xl shadow-md mb-6">
+      <section className="bg-white rounded-xl shadow-md mb-4 sm:mb-6">
         <div className={`border-b ${smtpFormOpen ? 'border-gray-200' : ''}`}>
           <div
-            className="p-6 cursor-pointer hover:bg-gray-50 transition-colors flex items-center justify-between select-none"
+            className="p-4 sm:p-6 cursor-pointer hover:bg-gray-50 transition-colors flex items-center justify-between select-none"
             onClick={() => setSmtpFormOpen(!smtpFormOpen)}
           >
-            <h3 className="font-semibold text-gray-800 flex items-center gap-2 text-lg">
-              <i className="fas fa-server"></i> Add Custom SMTP Sender
+            <h3 className="font-semibold text-gray-800 flex items-center gap-2 text-base sm:text-lg">
+              <i className="fas fa-server"></i> 
+              <span className="hidden sm:inline">Add Custom SMTP Sender</span>
+              <span className="sm:hidden">SMTP Sender</span>
             </h3>
-            <i className={`fas fa-chevron-down transition-transform duration-300 ${smtpFormOpen ? 'transform rotate-180' : ''}`}></i>
+            <i className={`fas fa-chevron-down transition-transform duration-300 text-sm ${smtpFormOpen ? 'transform rotate-180' : ''}`}></i>
           </div>
         </div>
         {smtpFormOpen && (
-          <div className="p-6">
-            <form onSubmit={editingSender?.type === 'smtp' ? handleUpdate : handleAddSmtp} className="space-y-5">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="p-4 sm:p-6">
+            <form onSubmit={editingSender?.type === 'smtp' ? handleUpdate : handleAddSmtp} className="space-y-4 sm:space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Sender Email *
@@ -413,7 +419,7 @@ export const Senders = () => {
                     defaultValue={editingSender?.email || ''}
                     disabled={!!editingSender}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
                     placeholder="your@domain.com"
                   />
                 </div>
@@ -425,12 +431,12 @@ export const Senders = () => {
                     type="text"
                     name="name"
                     defaultValue={editingSender?.name || ''}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
                     placeholder="e.g., Sales Team"
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     SMTP Host *
@@ -440,7 +446,7 @@ export const Senders = () => {
                     name="smtp_host"
                     defaultValue={editingSender?.smtp_host || ''}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
                     placeholder="smtp.hostinger.com"
                   />
                 </div>
@@ -455,12 +461,12 @@ export const Senders = () => {
                     min="1"
                     max="65535"
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
                     placeholder="587"
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     SMTP Username *
@@ -470,7 +476,7 @@ export const Senders = () => {
                     name="smtp_user"
                     defaultValue={editingSender?.smtp_user || ''}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
                     placeholder="user@example.com"
                   />
                 </div>
@@ -484,25 +490,25 @@ export const Senders = () => {
                       name="smtp_password"
                       defaultValue={editingSender?.smtp_password || ''}
                       required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea] pr-12"
+                      className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea] pr-10 sm:pr-12"
                     />
                     <button
                       type="button"
                       onClick={() => togglePasswordVisibility('smtpPassword')}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 px-3 py-1 text-gray-600 hover:text-gray-800"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 px-2 sm:px-3 py-1 text-gray-600 hover:text-gray-800"
                     >
-                      <i className={`fas ${showPassword['smtpPassword'] ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                      <i className={`fas text-sm ${showPassword['smtpPassword'] ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                     </button>
                   </div>
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     name="use_tls"
                     defaultChecked={editingSender?.use_tls !== false}
-                    className="w-5 h-5 rounded border-gray-300 text-[#667eea] focus:ring-[#667eea]"
+                    className="w-4 h-4 sm:w-5 sm:h-5 rounded border-gray-300 text-[#667eea] focus:ring-[#667eea]"
                   />
                   <span className="text-sm font-medium text-gray-700">Use TLS</span>
                 </label>
@@ -511,24 +517,24 @@ export const Senders = () => {
                     type="checkbox"
                     name="use_ssl"
                     defaultChecked={editingSender?.use_ssl || false}
-                    className="w-5 h-5 rounded border-gray-300 text-[#667eea] focus:ring-[#667eea]"
+                    className="w-4 h-4 sm:w-5 sm:h-5 rounded border-gray-300 text-[#667eea] focus:ring-[#667eea]"
                   />
                   <span className="text-sm font-medium text-gray-700">Use SSL</span>
                 </label>
               </div>
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <button
                   type="button"
                   onClick={handleTestSmtpConnection}
                   disabled={testingSmtp}
-                  className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors flex items-center gap-2 disabled:opacity-50"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-2 text-sm sm:text-base bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   <i className={`fas ${testingSmtp ? 'fa-spinner fa-spin' : 'fa-vial'}`}></i>
                   Test Connection
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-2 text-sm sm:text-base bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                 >
                   <i className="fas fa-save"></i>
                   {editingSender ? 'Update Sender' : 'Save Sender'}
@@ -537,7 +543,7 @@ export const Senders = () => {
                   <button
                     type="button"
                     onClick={handleCloseEdit}
-                    className="ml-2 px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+                    className="w-full sm:w-auto px-4 sm:px-6 py-2 text-sm sm:text-base bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
                   >
                     Cancel
                   </button>
@@ -549,36 +555,36 @@ export const Senders = () => {
       </section>
 
       {/* Sender List */}
-      <section className="bg-white rounded-xl shadow-md p-6">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+      <section className="bg-white rounded-xl shadow-md p-4 sm:p-6">
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center gap-2">
           <i className="fas fa-list"></i> Your Sender Emails
         </h2>
         {loading ? (
-          <div className="text-center py-8">
-            <i className="fas fa-spinner fa-spin text-2xl text-gray-400"></i>
+          <div className="text-center py-6 sm:py-8">
+            <i className="fas fa-spinner fa-spin text-xl sm:text-2xl text-gray-400"></i>
           </div>
         ) : senders.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <i className="fas fa-inbox text-4xl mb-2"></i>
-            <p>No senders added yet. Add your first sender above.</p>
+          <div className="text-center py-6 sm:py-8 text-gray-500">
+            <i className="fas fa-inbox text-3xl sm:text-4xl mb-2"></i>
+            <p className="text-sm sm:text-base">No senders added yet. Add your first sender above.</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {senders.map((sender) => {
               const hasSpaces = sender.type === 'gmail' && sender.password && sender.password.includes(' ');
               return (
                 <div
                   key={sender.email}
-                  className="border-l-4 border-[#667eea] bg-white rounded-lg shadow-sm p-5 flex items-center gap-4 hover:shadow-md transition-shadow"
+                  className="border-l-4 border-[#667eea] bg-white rounded-lg shadow-sm p-3 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 hover:shadow-md transition-shadow"
                 >
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#667eea] to-[#764ba2] flex items-center justify-center text-white text-xl">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-[#667eea] to-[#764ba2] flex items-center justify-center text-white text-lg sm:text-xl flex-shrink-0">
                     <i className={`fas ${sender.type === 'gmail' ? 'fa-envelope' : 'fa-server'}`}></i>
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <h4 className="font-semibold text-gray-800">{sender.email}</h4>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <h4 className="font-semibold text-sm sm:text-base text-gray-800 truncate">{sender.email}</h4>
                       <span
-                        className={`px-2 py-1 rounded text-xs font-semibold ${
+                        className={`px-2 py-1 rounded text-xs font-semibold flex-shrink-0 ${
                           sender.type === 'gmail'
                             ? 'bg-green-100 text-green-800'
                             : 'bg-purple-100 text-purple-800'
@@ -587,50 +593,50 @@ export const Senders = () => {
                         {sender.type.toUpperCase()}
                       </span>
                       {hasSpaces && (
-                        <span className="px-2 py-1 rounded text-xs font-semibold bg-yellow-100 text-yellow-800">
+                        <span className="px-2 py-1 rounded text-xs font-semibold bg-yellow-100 text-yellow-800 flex-shrink-0">
                           Has Spaces
                         </span>
                       )}
                     </div>
                     {sender.name && (
-                      <p className="text-sm text-gray-600 mb-1">
+                      <p className="text-xs sm:text-sm text-gray-600 mb-1">
                         <i className="fas fa-user mr-1"></i>
                         {sender.name}
                       </p>
                     )}
                     {sender.type === 'smtp' && (
-                      <p className="text-sm text-gray-600">
+                      <p className="text-xs sm:text-sm text-gray-600 truncate">
                         <i className="fas fa-server mr-1"></i>
                         {sender.smtp_host}:{sender.smtp_port}
                       </p>
                     )}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-shrink-0 self-start sm:self-auto">
                     <button
                       onClick={() => handleTest(sender.email)}
                       disabled={testingEmail === sender.email}
-                      className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors flex items-center justify-center disabled:opacity-50"
+                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors flex items-center justify-center disabled:opacity-50"
                       title="Test Sender"
                     >
                       {testingEmail === sender.email ? (
-                        <i className="fas fa-spinner fa-spin"></i>
+                        <i className="fas fa-spinner fa-spin text-sm"></i>
                       ) : (
-                        <i className="fas fa-vial"></i>
+                        <i className="fas fa-vial text-sm"></i>
                       )}
                     </button>
                     <button
                       onClick={() => handleEdit(sender)}
-                      className="w-10 h-10 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 transition-colors flex items-center justify-center"
+                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 transition-colors flex items-center justify-center"
                       title="Edit Sender"
                     >
-                      <i className="fas fa-edit"></i>
+                      <i className="fas fa-edit text-sm"></i>
                     </button>
                     <button
                       onClick={() => handleDelete(sender.email)}
-                      className="w-10 h-10 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors flex items-center justify-center"
+                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors flex items-center justify-center"
                       title="Delete Sender"
                     >
-                      <i className="fas fa-trash"></i>
+                      <i className="fas fa-trash text-sm"></i>
                     </button>
                   </div>
                 </div>

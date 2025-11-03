@@ -211,21 +211,23 @@ export const Campaigns = () => {
   return (
     <Layout>
       {/* Create Campaign */}
-      <section className="bg-white rounded-xl shadow-md mb-6">
+      <section className="bg-white rounded-xl shadow-md mb-4 sm:mb-6">
         <div className={`border-b ${createFormOpen ? 'border-gray-200' : ''}`}>
           <div
-            className="p-6 cursor-pointer hover:bg-gray-50 transition-colors flex items-center justify-between select-none"
+            className="p-4 sm:p-6 cursor-pointer hover:bg-gray-50 transition-colors flex items-center justify-between select-none"
             onClick={() => setCreateFormOpen(!createFormOpen)}
           >
-            <h3 className="font-semibold text-gray-800 flex items-center gap-2 text-lg">
-              <i className="fas fa-plus-circle"></i> Create New Campaign
+            <h3 className="font-semibold text-gray-800 flex items-center gap-2 text-base sm:text-lg">
+              <i className="fas fa-plus-circle"></i> 
+              <span className="hidden sm:inline">Create New Campaign</span>
+              <span className="sm:hidden">Create Campaign</span>
             </h3>
-            <i className={`fas fa-chevron-down transition-transform duration-300 ${createFormOpen ? 'transform rotate-180' : ''}`}></i>
+            <i className={`fas fa-chevron-down transition-transform duration-300 text-sm ${createFormOpen ? 'transform rotate-180' : ''}`}></i>
           </div>
         </div>
         {createFormOpen && (
-          <div className="p-6">
-            <form onSubmit={handleCreateCampaign} className="space-y-5">
+          <div className="p-4 sm:p-6">
+            <form onSubmit={handleCreateCampaign} className="space-y-4 sm:space-y-5">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Campaign Name *
@@ -234,7 +236,7 @@ export const Campaigns = () => {
                   type="text"
                   name="name"
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
+                  className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
                   placeholder="e.g., Q4 Newsletter"
                 />
               </div>
@@ -245,13 +247,13 @@ export const Campaigns = () => {
                 <textarea
                   name="description"
                   rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
+                  className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
                   placeholder="Describe your campaign..."
                 ></textarea>
               </div>
               <button
                 type="submit"
-                className="px-6 py-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
+                className="w-full sm:w-auto px-4 sm:px-6 py-2 text-sm sm:text-base bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
               >
                 <i className="fas fa-plus"></i>
                 Create Campaign
@@ -262,25 +264,25 @@ export const Campaigns = () => {
       </section>
 
       {/* Campaign List */}
-      <section className="bg-white rounded-xl shadow-md p-6">
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-          <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+      <section className="bg-white rounded-xl shadow-md p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-3 sm:gap-4">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-800 flex items-center gap-2">
             <i className="fas fa-list"></i> Your Campaigns
           </h2>
           {campaigns.length > 0 && (
-            <div className="relative flex-1 max-w-md">
-              <i className="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            <div className="relative flex-1 sm:max-w-md w-full">
+              <i className="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i>
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search campaigns by name, description, or status..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
+                placeholder="Search campaigns..."
+                className="w-full pl-9 sm:pl-10 pr-8 sm:pr-10 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm"
                 >
                   <i className="fas fa-times"></i>
                 </button>
@@ -289,21 +291,21 @@ export const Campaigns = () => {
           )}
         </div>
         {loading ? (
-          <div className="text-center py-8">
-            <i className="fas fa-spinner fa-spin text-2xl text-gray-400"></i>
+          <div className="text-center py-6 sm:py-8">
+            <i className="fas fa-spinner fa-spin text-xl sm:text-2xl text-gray-400"></i>
           </div>
         ) : campaigns.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <i className="fas fa-inbox text-4xl mb-2"></i>
-            <p>No campaigns yet. Create your first campaign above!</p>
+          <div className="text-center py-6 sm:py-8 text-gray-500">
+            <i className="fas fa-inbox text-3xl sm:text-4xl mb-2"></i>
+            <p className="text-sm sm:text-base">No campaigns yet. Create your first campaign above!</p>
           </div>
         ) : filteredCampaigns.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <i className="fas fa-search text-4xl mb-2"></i>
-            <p>No campaigns found matching "{searchQuery}"</p>
+          <div className="text-center py-6 sm:py-8 text-gray-500">
+            <i className="fas fa-search text-3xl sm:text-4xl mb-2"></i>
+            <p className="text-sm sm:text-base">No campaigns found matching "{searchQuery}"</p>
             <button
               onClick={() => setSearchQuery('')}
-              className="mt-2 text-[#667eea] hover:underline"
+              className="mt-2 text-sm sm:text-base text-[#667eea] hover:underline"
             >
               Clear search
             </button>
@@ -311,11 +313,11 @@ export const Campaigns = () => {
         ) : (
           <>
             {searchQuery && (
-              <div className="mb-4 text-sm text-gray-600">
+              <div className="mb-3 sm:mb-4 text-xs sm:text-sm text-gray-600">
                 Found <strong>{filteredCampaigns.length}</strong> {filteredCampaigns.length === 1 ? 'campaign' : 'campaigns'} matching "{searchQuery}"
               </div>
             )}
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {filteredCampaigns.map((campaign) => {
               const progress = campaign.stats?.total_leads
                 ? calculatePercentage(campaign.stats.total_sent || 0, campaign.stats.total_leads)
@@ -324,14 +326,14 @@ export const Campaigns = () => {
               return (
                 <div
                   key={campaign.id}
-                  className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-[#667eea] hover:shadow-md transition-shadow hover:translate-x-1"
+                  className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border-l-4 border-[#667eea] hover:shadow-md transition-shadow"
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-800">{campaign.name}</h3>
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-3 sm:mb-4 gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-800 truncate">{campaign.name}</h3>
                         <span
-                          className={`px-3 py-1 rounded text-xs font-semibold ${
+                          className={`px-2 sm:px-3 py-1 rounded text-xs font-semibold flex-shrink-0 ${
                             campaign.status === 'running'
                               ? 'bg-green-100 text-green-800'
                               : campaign.status === 'completed'
@@ -344,35 +346,36 @@ export const Campaigns = () => {
                           {campaign.status}
                         </span>
                       </div>
-                      <p className="text-gray-600 mb-4 italic">{campaign.description || 'No description'}</p>
-                      <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-3">
-                        <span className="flex items-center gap-2">
+                      <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4 italic line-clamp-2">{campaign.description || 'No description'}</p>
+                      <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 mb-3">
+                        <span className="flex items-center gap-1 sm:gap-2">
                           <i className="fas fa-calendar text-[#667eea]"></i>
                           {formatDate(campaign.created_at)}
                         </span>
                         {campaign.selected_senders && campaign.selected_senders.length > 0 && (
-                          <span className="flex items-center gap-2">
+                          <span className="flex items-center gap-1 sm:gap-2">
                             <i className="fas fa-paper-plane text-[#667eea]"></i>
                             {campaign.selected_senders.length} senders
                           </span>
                         )}
                         {campaign.stats?.total_leads && (
-                          <span className="flex items-center gap-2">
+                          <span className="flex items-center gap-1 sm:gap-2">
                             <i className="fas fa-users text-[#667eea]"></i>
                             {formatNumber(campaign.stats.total_leads)} leads
                           </span>
                         )}
-                        <span className="flex items-center gap-2">
+                        <span className="flex items-center gap-1 sm:gap-2">
                           <i className="fas fa-clock text-[#667eea]"></i>
-                          {getScheduleInfo(campaign)}
+                          <span className="hidden sm:inline">{getScheduleInfo(campaign)}</span>
+                          <span className="sm:hidden">Scheduled</span>
                         </span>
                       </div>
                     </div>
                   </div>
 
                   {campaign.stats?.total_leads && (
-                    <div className="mb-4">
-                      <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+                    <div className="mb-3 sm:mb-4">
+                      <div className="flex items-center justify-between text-xs sm:text-sm text-gray-600 mb-2">
                         <span>Progress</span>
                         <span>
                           {campaign.stats.total_sent || 0} / {campaign.stats.total_leads} ({progress}%)
@@ -387,40 +390,40 @@ export const Campaigns = () => {
                     </div>
                   )}
 
-                  <div className="flex gap-2 flex-wrap">
+                  <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => handleSetup(campaign)}
-                      className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors text-sm flex items-center gap-2"
+                      className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2"
                     >
-                      <i className="fas fa-cog"></i> Setup
+                      <i className="fas fa-cog"></i> <span className="hidden sm:inline">Setup</span>
                     </button>
                     {campaign.status === 'running' ? (
                       <button
                         onClick={() => navigate(`/active-campaign?id=${campaign.id}`)}
-                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:opacity-90 transition-opacity text-sm flex items-center gap-2"
+                        className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-blue-500 text-white rounded-lg hover:opacity-90 transition-opacity text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2"
                       >
-                        <i className="fas fa-eye"></i> View
+                        <i className="fas fa-eye"></i> <span className="hidden sm:inline">View</span>
                       </button>
                     ) : campaign.status === 'completed' ? (
                       <button
                         onClick={() => navigate(`/active-campaign?id=${campaign.id}`)}
-                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:opacity-90 transition-opacity text-sm flex items-center gap-2"
+                        className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-blue-500 text-white rounded-lg hover:opacity-90 transition-opacity text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2"
                       >
-                        <i className="fas fa-eye"></i> View
+                        <i className="fas fa-eye"></i> <span className="hidden sm:inline">View</span>
                       </button>
                     ) : (
                       <button
                         onClick={() => handleStartCampaign(campaign.id)}
-                        className="px-4 py-2 bg-green-500 text-white rounded-lg hover:opacity-90 transition-opacity text-sm flex items-center gap-2"
+                        className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-green-500 text-white rounded-lg hover:opacity-90 transition-opacity text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2"
                       >
-                        <i className="fas fa-play"></i> Start
+                        <i className="fas fa-play"></i> <span className="hidden sm:inline">Start</span>
                       </button>
                     )}
                     <button
                       onClick={() => handleDelete(campaign.id)}
-                      className="px-4 py-2 bg-red-500 text-white rounded-lg hover:opacity-90 transition-opacity text-sm flex items-center gap-2"
+                      className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-red-500 text-white rounded-lg hover:opacity-90 transition-opacity text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2"
                     >
-                      <i className="fas fa-trash"></i> Delete
+                      <i className="fas fa-trash"></i> <span className="hidden sm:inline">Delete</span>
                     </button>
                   </div>
                 </div>

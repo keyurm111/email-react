@@ -407,7 +407,7 @@ export const ActiveCampaign = () => {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-screen">
-          <i className="fas fa-spinner fa-spin text-4xl text-gray-400"></i>
+          <i className="fas fa-spinner fa-spin text-2xl sm:text-4xl text-gray-400"></i>
         </div>
       </Layout>
     );
@@ -416,9 +416,9 @@ export const ActiveCampaign = () => {
   if (!campaign) {
     return (
       <Layout>
-        <div className="text-center py-12">
-          <i className="fas fa-inbox text-4xl text-gray-400 mb-4"></i>
-          <p className="text-gray-600">Loading campaign details...</p>
+        <div className="text-center py-8 sm:py-12">
+          <i className="fas fa-inbox text-3xl sm:text-4xl text-gray-400 mb-3 sm:mb-4"></i>
+          <p className="text-sm sm:text-base text-gray-600">Loading campaign details...</p>
         </div>
       </Layout>
     );
@@ -427,14 +427,14 @@ export const ActiveCampaign = () => {
   return (
     <Layout>
       {/* Campaign Info Card */}
-      <section className="bg-white rounded-xl shadow-md p-6 mb-6">
-        <div className="flex items-start justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-800">{campaign.name}</h2>
-            <p className="text-gray-600 mt-1">{campaign.description || 'No description'}</p>
+      <section className="bg-white rounded-xl shadow-md p-4 sm:p-6 mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 sm:mb-6 gap-3">
+          <div className="flex-1 min-w-0">
+            <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 truncate">{campaign.name}</h2>
+            <p className="text-sm sm:text-base text-gray-600 mt-1 line-clamp-2">{campaign.description || 'No description'}</p>
           </div>
           <span
-            className={`px-3 py-1 rounded-lg text-sm font-semibold ${
+            className={`px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm font-semibold flex-shrink-0 ${
               campaign.status === 'running'
                 ? 'bg-green-100 text-green-800'
                 : campaign.status === 'paused'
@@ -449,49 +449,49 @@ export const ActiveCampaign = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-blue-50 rounded-lg p-4 flex items-center gap-3 border-l-4 border-blue-500">
-            <i className="fas fa-envelope text-blue-600 text-2xl"></i>
-            <div>
-              <h3 className="text-xl font-bold text-gray-800">{formatNumber(totalSent)}</h3>
-              <p className="text-sm text-gray-600">Sent</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="bg-blue-50 rounded-lg p-3 sm:p-4 flex items-center gap-2 sm:gap-3 border-l-4 border-blue-500">
+            <i className="fas fa-envelope text-blue-600 text-xl sm:text-2xl flex-shrink-0"></i>
+            <div className="min-w-0">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-800 truncate">{formatNumber(totalSent)}</h3>
+              <p className="text-xs sm:text-sm text-gray-600">Sent</p>
             </div>
           </div>
-          <div className="bg-red-50 rounded-lg p-4 flex items-center gap-3 border-l-4 border-red-500">
-            <i className="fas fa-exclamation-circle text-red-600 text-2xl"></i>
-            <div>
-              <h3 className="text-xl font-bold text-gray-800">{formatNumber(totalFailed)}</h3>
-              <p className="text-sm text-gray-600">Failed</p>
+          <div className="bg-red-50 rounded-lg p-3 sm:p-4 flex items-center gap-2 sm:gap-3 border-l-4 border-red-500">
+            <i className="fas fa-exclamation-circle text-red-600 text-xl sm:text-2xl flex-shrink-0"></i>
+            <div className="min-w-0">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-800 truncate">{formatNumber(totalFailed)}</h3>
+              <p className="text-xs sm:text-sm text-gray-600">Failed</p>
             </div>
           </div>
-          <div className="bg-orange-50 rounded-lg p-4 flex items-center gap-3 border-l-4 border-orange-500">
-            <i className="fas fa-clock text-orange-600 text-2xl"></i>
-            <div>
-              <h3 className="text-xl font-bold text-gray-800">{formatNumber(remaining)}</h3>
-              <p className="text-sm text-gray-600">Remaining</p>
+          <div className="bg-orange-50 rounded-lg p-3 sm:p-4 flex items-center gap-2 sm:gap-3 border-l-4 border-orange-500">
+            <i className="fas fa-clock text-orange-600 text-xl sm:text-2xl flex-shrink-0"></i>
+            <div className="min-w-0">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-800 truncate">{formatNumber(remaining)}</h3>
+              <p className="text-xs sm:text-sm text-gray-600">Remaining</p>
             </div>
           </div>
-          <div className="bg-green-50 rounded-lg p-4 flex items-center gap-3 border-l-4 border-green-500">
-            <i className="fas fa-percentage text-green-600 text-2xl"></i>
-            <div>
-              <h3 className="text-xl font-bold text-gray-800">{successRate}%</h3>
-              <p className="text-sm text-gray-600">Success Rate</p>
+          <div className="bg-green-50 rounded-lg p-3 sm:p-4 flex items-center gap-2 sm:gap-3 border-l-4 border-green-500">
+            <i className="fas fa-percentage text-green-600 text-xl sm:text-2xl flex-shrink-0"></i>
+            <div className="min-w-0">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-800 truncate">{successRate}%</h3>
+              <p className="text-xs sm:text-sm text-gray-600">Success Rate</p>
             </div>
           </div>
         </div>
 
         {/* Progress Bar */}
         {totalLeads > 0 && (
-          <div className="mb-6">
-            <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+          <div className="mb-4 sm:mb-6">
+            <div className="flex items-center justify-between text-xs sm:text-sm text-gray-600 mb-2">
               <span>Overall Progress</span>
-              <span>
+              <span className="text-right">
                 {formatNumber(totalSent)} / {formatNumber(totalLeads)} ({progress}%)
               </span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-3">
+            <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3">
               <div
-                className="bg-gradient-to-r from-[#667eea] to-[#764ba2] h-3 rounded-full transition-all"
+                className="bg-gradient-to-r from-[#667eea] to-[#764ba2] h-2 sm:h-3 rounded-full transition-all"
                 style={{ width: `${progress}%` }}
               ></div>
             </div>
@@ -499,97 +499,107 @@ export const ActiveCampaign = () => {
         )}
 
         {/* Campaign Controls */}
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
           {campaign.status === 'draft' && (
             <button
               onClick={handleStart}
-              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
+              className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm sm:text-base bg-green-500 text-white rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
             >
-              <i className="fas fa-play"></i> Start Campaign
+              <i className="fas fa-play"></i> 
+              <span className="hidden sm:inline">Start Campaign</span>
+              <span className="sm:hidden">Start</span>
             </button>
           )}
           {campaign.status === 'running' && (
             <button
               onClick={handlePause}
-              className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
+              className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm sm:text-base bg-yellow-500 text-white rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
             >
-              <i className="fas fa-pause"></i> Pause Campaign
+              <i className="fas fa-pause"></i> 
+              <span className="hidden sm:inline">Pause Campaign</span>
+              <span className="sm:hidden">Pause</span>
             </button>
           )}
           {campaign.status === 'paused' && (
             <button
               onClick={handleResume}
-              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
+              className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm sm:text-base bg-green-500 text-white rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
             >
-              <i className="fas fa-play"></i> Resume Campaign
+              <i className="fas fa-play"></i> 
+              <span className="hidden sm:inline">Resume Campaign</span>
+              <span className="sm:hidden">Resume</span>
             </button>
           )}
           <button
             onClick={handleReset}
-            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
+            className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm sm:text-base bg-red-500 text-white rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
           >
-            <i className="fas fa-redo"></i> Reset Campaign
+            <i className="fas fa-redo"></i> 
+            <span className="hidden sm:inline">Reset Campaign</span>
+            <span className="sm:hidden">Reset</span>
           </button>
           <button
             onClick={() => navigate('/campaigns')}
-            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors flex items-center gap-2"
+            className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm sm:text-base bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors flex items-center justify-center gap-2"
           >
-            <i className="fas fa-arrow-left"></i> Back to Campaigns
+            <i className="fas fa-arrow-left"></i> 
+            <span className="hidden sm:inline">Back to Campaigns</span>
+            <span className="sm:hidden">Back</span>
           </button>
         </div>
       </section>
 
       {/* Campaign Details */}
-      <section className="bg-white rounded-xl shadow-md p-6 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <section className="bg-white rounded-xl shadow-md p-4 sm:p-6 mb-4 sm:mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           {/* Senders */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center gap-2">
               <i className="fas fa-paper-plane"></i> Senders
             </h3>
             <div className="space-y-2">
               {campaign.selected_senders && campaign.selected_senders.length > 0 ? (
                 campaign.selected_senders.map((email) => (
-                  <div key={email} className="flex items-center gap-2 text-gray-700">
-                    <i className="fas fa-envelope text-[#667eea]"></i>
-                    <span>{email}</span>
+                  <div key={email} className="flex items-center gap-2 text-sm sm:text-base text-gray-700">
+                    <i className="fas fa-envelope text-[#667eea] flex-shrink-0"></i>
+                    <span className="truncate">{email}</span>
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500">No senders configured</p>
+                <p className="text-sm sm:text-base text-gray-500">No senders configured</p>
               )}
             </div>
           </div>
 
           {/* Configuration */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center gap-2">
               <i className="fas fa-cog"></i> Configuration
             </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <strong className="text-gray-700">Subject Line</strong>
-                <span className="text-gray-600">{campaign.subject_line || 'Not set'}</span>
+            <div className="space-y-2 sm:space-y-3">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
+                <strong className="text-xs sm:text-sm text-gray-700">Subject Line</strong>
+                <span className="text-xs sm:text-sm text-gray-600 break-words text-right">{campaign.subject_line || 'Not set'}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <strong className="text-gray-700">Daily Limit</strong>
-                <span className="text-gray-600">{campaign.daily_limit || 'Unlimited'}</span>
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
+                <strong className="text-xs sm:text-sm text-gray-700">Daily Limit</strong>
+                <span className="text-xs sm:text-sm text-gray-600">{campaign.daily_limit || 'Unlimited'}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <strong className="text-gray-700">Delay (seconds)</strong>
-                <span className="text-gray-600">{campaign.delay || '30'}</span>
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
+                <strong className="text-xs sm:text-sm text-gray-700">Delay (seconds)</strong>
+                <span className="text-xs sm:text-sm text-gray-600">{campaign.delay || '30'}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <strong className="text-gray-700">Schedule Time</strong>
-                <span className="text-gray-600">{campaign.schedule_time || 'Not set'}</span>
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
+                <strong className="text-xs sm:text-sm text-gray-700">Schedule Time</strong>
+                <span className="text-xs sm:text-sm text-gray-600">{campaign.schedule_time || 'Not set'}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <strong className="text-gray-700">Leads File</strong>
-                <span className="text-gray-600">{campaign.leads_file || 'Not uploaded'}</span>
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
+                <strong className="text-xs sm:text-sm text-gray-700">Leads File</strong>
+                <span className="text-xs sm:text-sm text-gray-600 truncate text-right">{campaign.leads_file || 'Not uploaded'}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <strong className="text-gray-700">Template File</strong>
-                <span className="text-gray-600">{campaign.template_file || 'Not uploaded'}</span>
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
+                <strong className="text-xs sm:text-sm text-gray-700">Template File</strong>
+                <span className="text-xs sm:text-sm text-gray-600 truncate text-right">{campaign.template_file || 'Not uploaded'}</span>
               </div>
             </div>
           </div>
@@ -597,15 +607,15 @@ export const ActiveCampaign = () => {
       </section>
 
       {/* Recent Activity */}
-      <section className="bg-white rounded-xl shadow-md p-6">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+      <section className="bg-white rounded-xl shadow-md p-4 sm:p-6">
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center gap-2">
           <i className="fas fa-history"></i> Recent Activity
         </h2>
-        <div className="space-y-3 max-h-96 overflow-y-auto">
+        <div className="space-y-2 sm:space-y-3 max-h-80 sm:max-h-96 overflow-y-auto">
           {logs.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <i className="fas fa-inbox text-4xl mb-2"></i>
-              <p>No activity yet</p>
+            <div className="text-center py-6 sm:py-8 text-gray-500">
+              <i className="fas fa-inbox text-3xl sm:text-4xl mb-2"></i>
+              <p className="text-sm sm:text-base">No activity yet</p>
             </div>
           ) : (
             logs.map((log, idx) => {
@@ -641,21 +651,21 @@ export const ActiveCampaign = () => {
               return (
                 <div
                   key={idx}
-                  className={`${bgClass} border-l-4 rounded-lg p-4 ${isCompletion ? 'shadow-md' : ''}`}
+                  className={`${bgClass} border-l-4 rounded-lg p-3 sm:p-4 ${isCompletion ? 'shadow-md' : ''}`}
                   style={{ borderLeftColor: borderColor }}
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-2 sm:gap-3">
                     <div className="flex-shrink-0" style={{ color: borderColor }}>
-                      <i className={`fas ${icon} text-lg`}></i>
+                      <i className={`fas ${icon} text-base sm:text-lg`}></i>
                     </div>
-                    <div className="flex-1">
-                      <p className={`font-medium ${textColor} ${isCompletion ? 'text-base font-semibold' : 'text-sm'}`}>
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-medium ${textColor} ${isCompletion ? 'text-sm sm:text-base font-semibold' : 'text-xs sm:text-sm'} break-words`}>
                         {log.message}
                       </p>
                       {log.details?.error && (
-                        <p className="text-sm text-red-600 mt-1">Error: {log.details.error}</p>
+                        <p className="text-xs sm:text-sm text-red-600 mt-1 break-words">Error: {log.details.error}</p>
                       )}
-                      <span className="text-xs text-gray-500 mt-2 block">{time}</span>
+                      <span className="text-xs text-gray-500 mt-1 sm:mt-2 block">{time}</span>
                     </div>
                   </div>
                 </div>

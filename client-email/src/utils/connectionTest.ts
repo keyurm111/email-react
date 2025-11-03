@@ -3,7 +3,7 @@
  * Tests backend API connectivity on app initialization
  */
 
-import { getApiBaseUrl, getTrackerUrl } from '../lib/apiConfig';
+import { getApiBaseUrl, getTrackerUrlAsync } from '../lib/apiConfig';
 
 const API_BASE_URL = getApiBaseUrl();
 
@@ -49,10 +49,10 @@ export const testTrackerConnection = async (): Promise<{
   message: string;
   url: string;
 }> => {
-  // Use the same configuration as api.ts
-  const TRACKER_URL = getTrackerUrl();
-  
   try {
+    // Use async function to get tracker URL with localhost fallback
+    const TRACKER_URL = await getTrackerUrlAsync();
+    
     const response = await fetch(`${TRACKER_URL}/health`, {
       method: 'GET',
     });
@@ -71,6 +71,8 @@ export const testTrackerConnection = async (): Promise<{
       };
     }
   } catch (error: any) {
+    // Fallback: try to get the URL anyway for the message
+    const TRACKER_URL = await getTrackerUrlAsync().catch(() => 'http://31.97.239.75:3399');
     return {
       success: false,
       message: '⚠️ Tracker server is not running (optional - tracking features will be disabled)',

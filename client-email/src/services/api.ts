@@ -1,6 +1,6 @@
 import { getUser } from '../utils/storage';
 import type { User, Sender, Campaign, CampaignLog, TrackerCampaign, TrackerEvent, Requirement } from '../types';
-import { API_BASE_URL, TRACKER_URL } from '../lib/apiConfig';
+import { API_BASE_URL, getTrackerUrlAsync } from '../lib/apiConfig';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -8,6 +8,18 @@ interface ApiResponse<T> {
   data?: T;
   [key: string]: any;
 }
+
+// Helper function to check if error is from browser extension
+const isExtensionError = (error: any): boolean => {
+  if (!error) return false;
+  const message = error.message || error.toString() || '';
+  return (
+    message.includes('message channel closed') ||
+    message.includes('asynchronous response') ||
+    message.includes('Extension context invalidated') ||
+    message.includes('runtime.lastError')
+  );
+};
 
 async function apiRequest<T>(endpoint: string, method: string = 'GET', data: any = null): Promise<T> {
   const user = getUser();
@@ -60,7 +72,33 @@ async function apiRequest<T>(endpoint: string, method: string = 'GET', data: any
 
     return result;
   } catch (error: any) {
+    // Silently ignore browser extension errors
+    if (isExtensionError(error)) {
     if (import.meta.env.DEV) {
+        console.warn('⚠️ Browser extension interference detected (this is harmless)');
+      }
+      // Retry the request once to see if it works despite extension interference
+      try {
+        const url = `${API_BASE_URL}${endpoint}`;
+        const response = await fetch(url, config);
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const result = await response.json();
+          if (response.ok) {
+            return result;
+          }
+        }
+      } catch (retryError) {
+        // If retry also fails, continue with original error handling
+      }
+    }
+    
+    // Handle aborted requests (user navigation, etc.)
+    if (error.name === 'AbortError') {
+      throw new Error('Request was cancelled');
+    }
+    
+    if (import.meta.env.DEV && !isExtensionError(error)) {
       console.error('❌ API Error:', {
         endpoint,
         method,
@@ -209,6 +247,7 @@ export const analyticsApi = {
 export const trackerApi = {
   getTrackerCampaigns: async (): Promise<ApiResponse<{ campaigns: TrackerCampaign[] }>> => {
     try {
+      const TRACKER_URL = await getTrackerUrlAsync();
       const user = getUser();
       const response = await fetch(`${TRACKER_URL}/user/campaigns`, {
         headers: {
@@ -220,7 +259,10 @@ export const trackerApi = {
       }
       return await response.json();
     } catch (error: any) {
+      // Don't log extension errors
+      if (!isExtensionError(error)) {
       console.warn('Tracker server not available:', error.message);
+      }
       return {
         success: false,
         error: 'TRACKER_NOT_RUNNING',
@@ -231,13 +273,17 @@ export const trackerApi = {
   },
   getTrackerCampaignData: async (campaignName: string): Promise<ApiResponse<any>> => {
     try {
+      const TRACKER_URL = await getTrackerUrlAsync();
       const response = await fetch(`${TRACKER_URL}/campaign/${encodeURIComponent(campaignName)}`);
       if (!response.ok) {
         throw new Error(`Tracker server returned ${response.status}`);
       }
       return await response.json();
     } catch (error: any) {
+      // Don't log extension errors
+      if (!isExtensionError(error)) {
       console.warn('Tracker server not available:', error.message);
+      }
       return {
         success: false,
         error: 'TRACKER_NOT_RUNNING',
@@ -247,6 +293,7 @@ export const trackerApi = {
   },
   getTrackerTable: async (campaignName?: string): Promise<ApiResponse<{ events: TrackerEvent[] }>> => {
     try {
+      const TRACKER_URL = await getTrackerUrlAsync();
       const user = getUser();
       const url = campaignName
         ? `${TRACKER_URL}/user/table?campaign=${encodeURIComponent(campaignName)}`
@@ -261,7 +308,10 @@ export const trackerApi = {
       }
       return await response.json();
     } catch (error: any) {
+      // Don't log extension errors
+      if (!isExtensionError(error)) {
       console.warn('Tracker server not available:', error.message);
+      }
       return {
         success: false,
         error: 'TRACKER_NOT_RUNNING',

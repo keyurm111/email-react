@@ -75,7 +75,7 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-5 bg-gradient-to-br from-[#667eea] to-[#764ba2]">
+    <div className="min-h-screen flex items-center justify-center p-5">
       <div className="w-full max-w-[450px]">
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden animate-[slideUp_0.5s_ease]">
           <div className="bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white p-10 text-center">

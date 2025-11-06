@@ -38,7 +38,7 @@ export const testBackendConnection = async (): Promise<{
   } catch (error: any) {
     return {
       success: false,
-      message: `❌ Cannot connect to backend API at ${API_BASE_URL}. Make sure the API server is running on port 5000.`,
+      message: `❌ Cannot connect to backend API at ${API_BASE_URL}. Make sure the API server is running on port 7027.`,
       url: API_BASE_URL,
     };
   }

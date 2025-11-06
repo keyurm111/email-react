@@ -110,7 +110,7 @@ async function apiRequest<T>(endpoint: string, method: string = 'GET', data: any
     // Provide more helpful error messages
     if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
       throw new Error(
-        `Cannot connect to backend server at ${API_BASE_URL}. Make sure the API server is running on port 5000.`
+        `Cannot connect to backend server at ${API_BASE_URL}. Make sure the API server is running on port 7027.`
       );
     }
     

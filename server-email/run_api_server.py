@@ -14,7 +14,7 @@ if __name__ == '__main__':
     # Import and run the API server
     from api_server import app, start_email_worker
     
-    port = int(os.getenv('API_PORT', 5000))
+    port = int(os.getenv('API_PORT', 7027))
     debug = os.getenv('DEBUG', 'False').lower() == 'true'
     
     print("=" * 60)

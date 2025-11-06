@@ -25,13 +25,13 @@ export const getApiBaseUrl = (): string => {
 
   if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
     // Local development - use localhost server
-    return `${protocol}//localhost:5000/api`;
+    return `${protocol}//localhost:7027/api`;
   } else if (currentHost === 'akdmtask.onrender.com') {
     // Production frontend - use production backend
     return 'https://akdm-task.onrender.com/api';
   } else if (currentHost === '192.168.29.8' && currentPort === '8080') {
-    // Network frontend on port 8080 - connect to backend on port 5000
-    return `${protocol}//192.168.29.8:5000/api`;
+    // Network frontend on port 8080 - connect to backend on port 7027
+    return `${protocol}//192.168.29.8:7027/api`;
   } else if (currentHost === '192.168.9.23') {
     // Specific network IP for the live server - use HTTPS for backend
     return `${protocol}//192.168.9.23:8443/api`;
@@ -39,8 +39,8 @@ export const getApiBaseUrl = (): string => {
     // New map website frontend - connect to its backend
     return 'https://103.108.205.162:33999/api';
   } else if (currentHost === '192.168.29.8') {
-    // Network IP without specific port - default to backend port 5000
-    return `${protocol}//192.168.29.8:5000/api`;
+    // Network IP without specific port - default to backend port 7027
+    return `${protocol}//192.168.29.8:7027/api`;
   } else {
     // Fallback for other scenarios, like different private IPs
     return `${protocol}//${currentHost}:8443/api`;

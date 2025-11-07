@@ -34,6 +34,9 @@ import io
 # Load environment variables
 load_dotenv()
 
+# Tracker service base URL (defaults to production tracker if env not set)
+TRACKER_URL = os.getenv('TRACKER_URL', 'http://31.97.239.75:3399')
+
 # Custom JSON provider to handle MongoDB ObjectId
 class MongoJSONProvider(DefaultJSONProvider):
     def default(self, obj):
@@ -135,7 +138,7 @@ def ensure_campaign_stats(campaign):
 
 def generate_tracking_code(campaign_name):
     """Generate HTML tracking code for a campaign"""
-    tracker_url = os.getenv('TRACKER_URL', 'http://localhost:3003')
+    tracker_url = TRACKER_URL
     import urllib.parse
     encoded_campaign_name = urllib.parse.quote(campaign_name)
     
@@ -1026,7 +1029,7 @@ def upload_template(campaign_id):
         print(f"  Campaign name: {campaign_name}", file=sys.stderr)
         
         # Auto-inject tracking pixel (EXACTLY like Streamlit - lines 949-952)
-        tracker_server = os.getenv('TRACKER_URL', 'http://localhost:3003')
+        tracker_server = TRACKER_URL
         print(f"Injecting tracking pixel (tracker: {tracker_server})...", file=sys.stderr)
         template_with_tracking = inject_tracking_pixel(template_text, tracker_server, campaign_name)
         print(f"✓ Tracking pixel injected", file=sys.stderr)
@@ -1101,7 +1104,7 @@ def inject_tracking_endpoint(campaign_id):
             return jsonify({'success': False, 'message': 'Template content not found'}), 400
         
         # Inject tracking pixel
-        tracker_url = os.getenv('TRACKER_URL', 'http://localhost:3003')
+        tracker_url = TRACKER_URL
         updated_template = inject_tracking_pixel(template_content, campaign['name'], tracker_url)
         
         # Store updated template DIRECTLY in campaign (Streamlit pattern)

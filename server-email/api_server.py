@@ -13,6 +13,8 @@ import uuid
 from bson import ObjectId
 import threading
 import time
+import requests
+from urllib.parse import quote
 
 # Import existing backend modules
 from mongo_utils import (
@@ -36,6 +38,7 @@ load_dotenv()
 
 # Tracker service base URL (defaults to production tracker if env not set)
 TRACKER_URL = os.getenv('TRACKER_URL', 'http://31.97.239.75:3399')
+TRACKER_TIMEOUT = int(os.getenv('TRACKER_TIMEOUT', '10'))
 
 # Custom JSON provider to handle MongoDB ObjectId
 class MongoJSONProvider(DefaultJSONProvider):
@@ -156,6 +159,36 @@ def generate_tracking_code(campaign_name):
 </a>'''
     
     return tracking_code
+
+def _build_tracker_url(path: str) -> str:
+    return f"{TRACKER_URL.rstrip('/')}{path}"
+
+def _call_tracker_service(path: str, *, user_id: str | None = None, params: dict | None = None):
+    headers = {}
+    if user_id:
+        headers['X-User-ID'] = user_id
+    try:
+        response = requests.get(
+            _build_tracker_url(path),
+            headers=headers,
+            params=params,
+            timeout=TRACKER_TIMEOUT
+        )
+        # Attempt to parse JSON response
+        data = response.json()
+        return response.status_code, data
+    except requests.exceptions.RequestException as exc:
+        print(f"❌ Tracker service request failed ({path}): {exc}")
+        return 502, {
+            'success': False,
+            'message': f'Tracker service unavailable: {str(exc)}'
+        }
+    except ValueError:
+        print(f"❌ Tracker service returned non-JSON response for {path}")
+        return 502, {
+            'success': False,
+            'message': 'Tracker service returned invalid response'
+        }
 
 # ============================================
 # AUTHENTICATION ENDPOINTS
@@ -1965,6 +1998,85 @@ def health_check():
             'status': 'unhealthy',
             'error': str(e)
         }), 500
+
+@app.route('/api/tracker/campaigns', methods=['GET'])
+def proxy_tracker_campaigns():
+    """Get campaigns with tracking data for the current user."""
+    user_id = get_user_id_from_header()
+    if not user_id:
+        return jsonify({'success': False, 'message': 'User ID required'}), 401
+
+    status, data = _call_tracker_service('/user/campaigns', user_id=user_id)
+    if status >= 400:
+        return jsonify(data), status
+
+    response_payload = {
+        'success': data.get('success', True),
+        'data': {
+            'campaigns': data.get('campaigns', []),
+            'total_campaigns': data.get('total_campaigns', len(data.get('campaigns', [])))
+        }
+    }
+    if 'message' in data:
+        response_payload['message'] = data['message']
+    if 'user_id' in data:
+        response_payload['data']['user_id'] = data['user_id']
+
+    return jsonify(response_payload)
+
+
+@app.route('/api/tracker/campaigns/<path:campaign_name>', methods=['GET'])
+def proxy_tracker_campaign_details(campaign_name):
+    """Get detailed tracking analytics for a specific campaign."""
+    encoded_name = quote(campaign_name, safe='')
+    status, data = _call_tracker_service(f'/campaign/{encoded_name}')
+    if status >= 400:
+        return jsonify(data), status
+
+    response_payload = {
+        'success': data.get('success', True),
+        'data': data,
+        'campaign_name': campaign_name
+    }
+    if 'message' in data:
+        response_payload['message'] = data['message']
+    return jsonify(response_payload)
+
+
+@app.route('/api/tracker/table', methods=['GET'])
+def proxy_tracker_table():
+    """Get tracking table data (optionally filtered by campaign) for the current user."""
+    user_id = get_user_id_from_header()
+    if not user_id:
+        return jsonify({'success': False, 'message': 'User ID required'}), 401
+
+    campaign = request.args.get('campaign')
+    params = {'campaign': campaign} if campaign else None
+
+    status, data = _call_tracker_service('/user/table', user_id=user_id, params=params)
+    if status >= 400:
+        return jsonify(data), status
+
+    events = []
+    if isinstance(data, dict):
+        if isinstance(data.get('data'), list):
+            events = data['data']
+        elif isinstance(data.get('events'), list):
+            events = data['events']
+
+    response_payload = {
+        'success': data.get('success', True),
+        'data': {
+            'events': events,
+            'count': data.get('count', len(events))
+        }
+    }
+    if campaign:
+        response_payload['campaign'] = campaign
+    if 'message' in data:
+        response_payload['message'] = data['message']
+
+    return jsonify(response_payload)
 
 # ============================================
 # RUN SERVER

@@ -7,7 +7,6 @@ export const getApiBaseUrl = () => {
   
   // Auto-detect based on current location
   const currentHost = window.location.hostname;
-  const currentPort = window.location.port;
   const isHttps = window.location.protocol === 'https:';
   const protocol = isHttps ? 'https:' : 'http:';
   

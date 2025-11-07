@@ -1,6 +1,6 @@
 import { getUser } from '../utils/storage';
 import type { User, Sender, Campaign, CampaignLog, TrackerCampaign, TrackerEvent, Requirement } from '../types';
-import { API_BASE_URL, getTrackerUrlAsync } from '../lib/apiConfig';
+import { API_BASE_URL, getTrackerUrl } from '../lib/apiConfig';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -247,7 +247,7 @@ export const analyticsApi = {
 export const trackerApi = {
   getTrackerCampaigns: async (): Promise<ApiResponse<{ campaigns: TrackerCampaign[] }>> => {
     try {
-      const TRACKER_URL = await getTrackerUrlAsync();
+      const TRACKER_URL = getTrackerUrl();
       const user = getUser();
       const response = await fetch(`${TRACKER_URL}/user/campaigns`, {
         headers: {
@@ -273,7 +273,7 @@ export const trackerApi = {
   },
   getTrackerCampaignData: async (campaignName: string): Promise<ApiResponse<any>> => {
     try {
-      const TRACKER_URL = await getTrackerUrlAsync();
+      const TRACKER_URL = getTrackerUrl();
       const response = await fetch(`${TRACKER_URL}/campaign/${encodeURIComponent(campaignName)}`);
       if (!response.ok) {
         throw new Error(`Tracker server returned ${response.status}`);
@@ -293,7 +293,7 @@ export const trackerApi = {
   },
   getTrackerTable: async (campaignName?: string): Promise<ApiResponse<{ events: TrackerEvent[] }>> => {
     try {
-      const TRACKER_URL = await getTrackerUrlAsync();
+      const TRACKER_URL = getTrackerUrl();
       const user = getUser();
       const url = campaignName
         ? `${TRACKER_URL}/user/table?campaign=${encodeURIComponent(campaignName)}`

@@ -1600,6 +1600,23 @@ def process_campaign_emails(campaign_id, campaign, user_id, force_immediate=Fals
                     if placeholder in personalized_template:
                         personalized_template = personalized_template.replace(placeholder, str(row[column]))
                 
+                # Ensure common tracking placeholders are always replaced
+                email_value = row.get('Emails') or row.get('Email') or row.get('email')
+                if email_value:
+                    for placeholder in ['{{Emails}}', '{{Email}}', '{{email}}']:
+                        if placeholder in personalized_template:
+                            personalized_template = personalized_template.replace(placeholder, str(email_value))
+                name_value = row.get('Name') or row.get('name')
+                if name_value:
+                    for placeholder in ['{{Name}}', '{{name}}']:
+                        if placeholder in personalized_template:
+                            personalized_template = personalized_template.replace(placeholder, str(name_value))
+                instagram_value = row.get('Instagram') or row.get('instagram')
+                if instagram_value:
+                    for placeholder in ['{{Instagram}}', '{{instagram}}']:
+                        if placeholder in personalized_template:
+                            personalized_template = personalized_template.replace(placeholder, str(instagram_value))
+                
                 batch_recipients.append(email)
                 batch_personalized_templates[email] = personalized_template
                 

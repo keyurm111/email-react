@@ -129,12 +129,12 @@ export const getTrackerUrlAsync = async (): Promise<string> => {
   // If environment variable is set, use it without testing
   if (import.meta.env.VITE_TRACKER_URL) {
     cachedTrackerUrl = import.meta.env.VITE_TRACKER_URL;
-    return cachedTrackerUrl;
+    return cachedTrackerUrl as string;
   }
 
   // If we already tested and have a cached URL, return it
   if (trackerUrlTested && cachedTrackerUrl) {
-    return cachedTrackerUrl;
+    return cachedTrackerUrl as string;
   }
 
   const currentHost = window.location.hostname;

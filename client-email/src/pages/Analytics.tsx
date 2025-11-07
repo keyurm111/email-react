@@ -16,6 +16,7 @@ import {
   Title,
   Filler,
 } from 'chart.js';
+// @ts-ignore - react-chartjs-2 exports are not properly typed
 import { Pie, Line } from 'react-chartjs-2';
 
 // Register Chart.js components
@@ -353,7 +354,7 @@ export const Analytics = () => {
                     },
                     tooltip: {
                       callbacks: {
-                        label: function (context) {
+                        label: function (context: any) {
                           const label = context.label || '';
                           const value = formatNumber(context.parsed);
                           const total = displayStats.total_sent + displayStats.total_failed;
@@ -424,7 +425,7 @@ export const Analytics = () => {
                     },
                     tooltip: {
                       callbacks: {
-                        label: function (context) {
+                        label: function (context: any) {
                           return `${context.dataset.label}: ${formatNumber(context.parsed.y)}`;
                         },
                       },
@@ -446,7 +447,7 @@ export const Analytics = () => {
                         font: {
                           size: window.innerWidth < 640 ? 9 : 11,
                         },
-                        callback: function (value) {
+                        callback: function (value: any) {
                           return formatNumber(Number(value));
                         },
                       },
@@ -513,7 +514,7 @@ export const Analytics = () => {
                     },
                     tooltip: {
                       callbacks: {
-                        label: function (context) {
+                        label: function (context: any) {
                           const label = context.label || '';
                           const value = formatNumber(context.parsed);
                           const total = filteredCampaigns.reduce(
@@ -553,7 +554,7 @@ export const Analytics = () => {
         ) : (
           <div className="space-y-3 sm:space-y-4">
             {filteredCampaigns.map((campaign) => {
-              const campaignStats = campaign.stats || {};
+              const campaignStats = campaign.stats || { total_leads: 0, total_sent: 0, total_failed: 0 };
               const totalSent = campaignStats.total_sent || 0;
               const totalFailed = campaignStats.total_failed || 0;
               const totalLeads = campaignStats.total_leads || 0;

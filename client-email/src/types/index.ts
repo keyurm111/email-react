@@ -25,12 +25,16 @@ export interface Campaign {
   created_at: string;
   selected_senders?: string[];
   leads_file?: string;
+  leads_data?: string;
   template_file?: string;
+  template_data?: string;
   subject_line?: string;
   daily_limit?: number;
   delay?: number;
   schedule_enabled?: boolean;
   schedule_time?: string;
+  scheduled_date?: string;
+  start_immediate_daily?: boolean;
   stats?: {
     total_leads: number;
     total_sent: number;

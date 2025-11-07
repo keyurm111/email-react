@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { campaignsApi } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
-import { formatDate, formatNumber, calculatePercentage } from '../utils/helpers';
+import { formatNumber, calculatePercentage } from '../utils/helpers';
 import type { Campaign } from '../types';
 
 interface CampaignLog {
@@ -395,7 +395,7 @@ export const ActiveCampaign = () => {
   };
 
   // Calculate stats - all hooks must be before any conditional returns
-  const stats = campaign?.stats || {};
+  const stats = campaign?.stats || { total_leads: 0, total_sent: 0, total_failed: 0 };
   const totalLeads = stats.total_leads || 0;
   const totalSent = stats.total_sent || 0;
   const totalFailed = stats.total_failed || 0;
@@ -619,26 +619,22 @@ export const ActiveCampaign = () => {
             </div>
           ) : (
             logs.map((log, idx) => {
-              let iconClass = 'info';
               let icon = 'fa-info-circle';
               let bgClass = 'bg-blue-50 border-blue-200';
               let borderColor = '#3b82f6';
               let textColor = 'text-blue-800';
 
               if (log.level === 'success') {
-                iconClass = 'success';
                 icon = 'fa-check-circle';
                 bgClass = 'bg-green-50 border-green-200';
                 borderColor = '#10b981';
                 textColor = 'text-green-800';
               } else if (log.level === 'error') {
-                iconClass = 'error';
                 icon = 'fa-times-circle';
                 bgClass = 'bg-red-50 border-red-200';
                 borderColor = '#ef4444';
                 textColor = 'text-red-800';
               } else if (log.level === 'warning') {
-                iconClass = 'warning';
                 icon = 'fa-exclamation-triangle';
                 bgClass = 'bg-yellow-50 border-yellow-200';
                 borderColor = '#f59e0b';

@@ -15,8 +15,8 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
   const [selectedSenders, setSelectedSenders] = useState<string[]>([]);
   const [leadsUploadMode, setLeadsUploadMode] = useState<'new' | 'existing'>('new');
   const [templateUploadMode, setTemplateUploadMode] = useState<'new' | 'existing'>('new');
-  const [leadsFile, setLeadsFile] = useState<File | null>(null);
-  const [templateFile, setTemplateFile] = useState<File | null>(null);
+  const [_leadsFile, setLeadsFile] = useState<File | null>(null);
+  const [_templateFile, setTemplateFile] = useState<File | null>(null);
   const [existingLeads, setExistingLeads] = useState<any[]>([]);
   const [existingTemplates, setExistingTemplates] = useState<any[]>([]);
   const [selectedExistingLead, setSelectedExistingLead] = useState<string>('');
@@ -38,7 +38,7 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
     schedule_date: '',
     schedule_time: '10:00',
   });
-  const [uploading, setUploading] = useState(false);
+  const [_uploading, setUploading] = useState(false);
   const [togglingSender, setTogglingSender] = useState(false);
   const leadsFileInputRef = useRef<HTMLInputElement>(null);
   const templateFileInputRef = useRef<HTMLInputElement>(null);
@@ -347,8 +347,8 @@ export const CampaignSetupModal = ({ campaign, onClose, onUpdate, showToast }: C
 
     try {
       const result = await campaignsApi.updateCampaign(campaign.id, {
-        template_file: null,
-        template_data: null,
+        template_file: undefined,
+        template_data: undefined,
       });
 
       if (result.success) {

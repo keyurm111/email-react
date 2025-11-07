@@ -103,8 +103,8 @@ export const Senders = () => {
       smtp_port: parseInt(formData.get('smtp_port') as string || '587'),
       smtp_user: (formData.get('smtp_user') as string).trim(),
       smtp_password: formData.get('smtp_password') as string,
-      use_tls: formData.get('use_tls') === 'on' || formData.get('use_tls') === 'true' || formData.get('use_tls') === true,
-      use_ssl: formData.get('use_ssl') === 'on' || formData.get('use_ssl') === 'true' || formData.get('use_ssl') === true,
+      use_tls: formData.get('use_tls') === 'on' || formData.get('use_tls') === 'true',
+      use_ssl: formData.get('use_ssl') === 'on' || formData.get('use_ssl') === 'true',
       type: 'smtp',
     };
 
@@ -154,8 +154,8 @@ export const Senders = () => {
       smtp_port: parseInt(formData.get('smtp_port') as string || '587'),
       smtp_user: (formData.get('smtp_user') as string).trim(),
       smtp_password: formData.get('smtp_password') as string,
-      use_tls: formData.get('use_tls') === 'on' || formData.get('use_tls') === 'true' || formData.get('use_tls') === true,
-      use_ssl: formData.get('use_ssl') === 'on' || formData.get('use_ssl') === 'true' || formData.get('use_ssl') === true,
+      use_tls: formData.get('use_tls') === 'on' || formData.get('use_tls') === 'true',
+      use_ssl: formData.get('use_ssl') === 'on' || formData.get('use_ssl') === 'true',
     };
 
     if (!smtpData.smtp_host || !smtpData.smtp_user || !smtpData.smtp_password) {

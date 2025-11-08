@@ -13,8 +13,6 @@ import uuid
 from bson import ObjectId
 import threading
 import time
-import requests
-from urllib.parse import quote
 
 # Import existing backend modules
 from mongo_utils import (
@@ -35,10 +33,6 @@ import io
 
 # Load environment variables
 load_dotenv()
-
-# Tracker service base URL (defaults to production tracker if env not set)
-TRACKER_URL = os.getenv('TRACKER_URL', 'http://31.97.239.75:3399')
-TRACKER_TIMEOUT = int(os.getenv('TRACKER_TIMEOUT', '10'))
 
 # Custom JSON provider to handle MongoDB ObjectId
 class MongoJSONProvider(DefaultJSONProvider):
@@ -141,7 +135,7 @@ def ensure_campaign_stats(campaign):
 
 def generate_tracking_code(campaign_name):
     """Generate HTML tracking code for a campaign"""
-    tracker_url = TRACKER_URL
+    tracker_url = os.getenv('TRACKER_URL', 'http://localhost:3003')
     import urllib.parse
     encoded_campaign_name = urllib.parse.quote(campaign_name)
     
@@ -159,36 +153,6 @@ def generate_tracking_code(campaign_name):
 </a>'''
     
     return tracking_code
-
-def _build_tracker_url(path: str) -> str:
-    return f"{TRACKER_URL.rstrip('/')}{path}"
-
-def _call_tracker_service(path: str, *, user_id: str | None = None, params: dict | None = None):
-    headers = {}
-    if user_id:
-        headers['X-User-ID'] = user_id
-    try:
-        response = requests.get(
-            _build_tracker_url(path),
-            headers=headers,
-            params=params,
-            timeout=TRACKER_TIMEOUT
-        )
-        # Attempt to parse JSON response
-        data = response.json()
-        return response.status_code, data
-    except requests.exceptions.RequestException as exc:
-        print(f"❌ Tracker service request failed ({path}): {exc}")
-        return 502, {
-            'success': False,
-            'message': f'Tracker service unavailable: {str(exc)}'
-        }
-    except ValueError:
-        print(f"❌ Tracker service returned non-JSON response for {path}")
-        return 502, {
-            'success': False,
-            'message': 'Tracker service returned invalid response'
-        }
 
 # ============================================
 # AUTHENTICATION ENDPOINTS
@@ -1062,7 +1026,7 @@ def upload_template(campaign_id):
         print(f"  Campaign name: {campaign_name}", file=sys.stderr)
         
         # Auto-inject tracking pixel (EXACTLY like Streamlit - lines 949-952)
-        tracker_server = TRACKER_URL
+        tracker_server = os.getenv('TRACKER_URL', 'http://localhost:3003')
         print(f"Injecting tracking pixel (tracker: {tracker_server})...", file=sys.stderr)
         template_with_tracking = inject_tracking_pixel(template_text, tracker_server, campaign_name)
         print(f"✓ Tracking pixel injected", file=sys.stderr)
@@ -1137,7 +1101,7 @@ def inject_tracking_endpoint(campaign_id):
             return jsonify({'success': False, 'message': 'Template content not found'}), 400
         
         # Inject tracking pixel
-        tracker_url = TRACKER_URL
+        tracker_url = os.getenv('TRACKER_URL', 'http://localhost:3003')
         updated_template = inject_tracking_pixel(template_content, campaign['name'], tracker_url)
         
         # Store updated template DIRECTLY in campaign (Streamlit pattern)
@@ -1633,23 +1597,6 @@ def process_campaign_emails(campaign_id, campaign, user_id, force_immediate=Fals
                     if placeholder in personalized_template:
                         personalized_template = personalized_template.replace(placeholder, str(row[column]))
                 
-                # Ensure common tracking placeholders are always replaced
-                email_value = row.get('Emails') or row.get('Email') or row.get('email')
-                if email_value:
-                    for placeholder in ['{{Emails}}', '{{Email}}', '{{email}}']:
-                        if placeholder in personalized_template:
-                            personalized_template = personalized_template.replace(placeholder, str(email_value))
-                name_value = row.get('Name') or row.get('name')
-                if name_value:
-                    for placeholder in ['{{Name}}', '{{name}}']:
-                        if placeholder in personalized_template:
-                            personalized_template = personalized_template.replace(placeholder, str(name_value))
-                instagram_value = row.get('Instagram') or row.get('instagram')
-                if instagram_value:
-                    for placeholder in ['{{Instagram}}', '{{instagram}}']:
-                        if placeholder in personalized_template:
-                            personalized_template = personalized_template.replace(placeholder, str(instagram_value))
-                
                 batch_recipients.append(email)
                 batch_personalized_templates[email] = personalized_template
                 
@@ -1998,85 +1945,6 @@ def health_check():
             'status': 'unhealthy',
             'error': str(e)
         }), 500
-
-@app.route('/api/tracker/campaigns', methods=['GET'])
-def proxy_tracker_campaigns():
-    """Get campaigns with tracking data for the current user."""
-    user_id = get_user_id_from_header()
-    if not user_id:
-        return jsonify({'success': False, 'message': 'User ID required'}), 401
-
-    status, data = _call_tracker_service('/user/campaigns', user_id=user_id)
-    if status >= 400:
-        return jsonify(data), status
-
-    response_payload = {
-        'success': data.get('success', True),
-        'data': {
-            'campaigns': data.get('campaigns', []),
-            'total_campaigns': data.get('total_campaigns', len(data.get('campaigns', [])))
-        }
-    }
-    if 'message' in data:
-        response_payload['message'] = data['message']
-    if 'user_id' in data:
-        response_payload['data']['user_id'] = data['user_id']
-
-    return jsonify(response_payload)
-
-
-@app.route('/api/tracker/campaigns/<path:campaign_name>', methods=['GET'])
-def proxy_tracker_campaign_details(campaign_name):
-    """Get detailed tracking analytics for a specific campaign."""
-    encoded_name = quote(campaign_name, safe='')
-    status, data = _call_tracker_service(f'/campaign/{encoded_name}')
-    if status >= 400:
-        return jsonify(data), status
-
-    response_payload = {
-        'success': data.get('success', True),
-        'data': data,
-        'campaign_name': campaign_name
-    }
-    if 'message' in data:
-        response_payload['message'] = data['message']
-    return jsonify(response_payload)
-
-
-@app.route('/api/tracker/table', methods=['GET'])
-def proxy_tracker_table():
-    """Get tracking table data (optionally filtered by campaign) for the current user."""
-    user_id = get_user_id_from_header()
-    if not user_id:
-        return jsonify({'success': False, 'message': 'User ID required'}), 401
-
-    campaign = request.args.get('campaign')
-    params = {'campaign': campaign} if campaign else None
-
-    status, data = _call_tracker_service('/user/table', user_id=user_id, params=params)
-    if status >= 400:
-        return jsonify(data), status
-
-    events = []
-    if isinstance(data, dict):
-        if isinstance(data.get('data'), list):
-            events = data['data']
-        elif isinstance(data.get('events'), list):
-            events = data['events']
-
-    response_payload = {
-        'success': data.get('success', True),
-        'data': {
-            'events': events,
-            'count': data.get('count', len(events))
-        }
-    }
-    if campaign:
-        response_payload['campaign'] = campaign
-    if 'message' in data:
-        response_payload['message'] = data['message']
-
-    return jsonify(response_payload)
 
 # ============================================
 # RUN SERVER

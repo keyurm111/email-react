@@ -1,6 +1,6 @@
 import { getUser } from '../utils/storage';
 import type { User, Sender, Campaign, CampaignLog, TrackerCampaign, TrackerEvent, Requirement } from '../types';
-import { API_BASE_URL } from '../lib/apiConfig';
+import { API_BASE_URL, getTrackerUrl } from '../lib/apiConfig';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -245,61 +245,79 @@ export const analyticsApi = {
 
 // Tracker API
 export const trackerApi = {
-  getTrackerCampaigns: async (): Promise<ApiResponse<{ campaigns: TrackerCampaign[]; total_campaigns?: number }>> => {
+  getTrackerCampaigns: async (): Promise<ApiResponse<{ campaigns: TrackerCampaign[] }>> => {
     try {
-      return await apiRequest<ApiResponse<{ campaigns: TrackerCampaign[]; total_campaigns?: number }>>('/tracker/campaigns');
+      const TRACKER_URL = getTrackerUrl();
+      const user = getUser();
+      const response = await fetch(`${TRACKER_URL}/user/campaigns`, {
+        headers: {
+          'X-User-ID': user?.user_id || '',
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`Tracker server returned ${response.status}`);
+      }
+      return await response.json();
     } catch (error: any) {
       // Don't log extension errors
       if (!isExtensionError(error)) {
-        console.warn('Tracker service not available:', error.message);
+      console.warn('Tracker server not available:', error.message);
       }
       return {
         success: false,
         error: 'TRACKER_NOT_RUNNING',
-        message: 'Tracker service is not reachable. Start it with: cd tracker && python run.py',
+        message: 'Tracker server is not running. Start it with: cd tracker && python run.py',
         campaigns: [],
-        data: {
-          campaigns: [],
-          total_campaigns: 0,
-        },
       };
     }
   },
   getTrackerCampaignData: async (campaignName: string): Promise<ApiResponse<any>> => {
     try {
-      return await apiRequest<ApiResponse<any>>(`/tracker/campaigns/${encodeURIComponent(campaignName)}`);
+      const TRACKER_URL = getTrackerUrl();
+      const response = await fetch(`${TRACKER_URL}/campaign/${encodeURIComponent(campaignName)}`);
+      if (!response.ok) {
+        throw new Error(`Tracker server returned ${response.status}`);
+      }
+      return await response.json();
     } catch (error: any) {
       // Don't log extension errors
       if (!isExtensionError(error)) {
-        console.warn('Tracker service not available:', error.message);
+      console.warn('Tracker server not available:', error.message);
       }
       return {
         success: false,
         error: 'TRACKER_NOT_RUNNING',
-        message: 'Tracker service is not reachable',
+        message: 'Tracker server is not running',
       };
     }
   },
-  getTrackerTable: async (campaignName?: string): Promise<ApiResponse<{ events: TrackerEvent[]; count: number }>> => {
+  getTrackerTable: async (campaignName?: string): Promise<ApiResponse<{ events: TrackerEvent[] }>> => {
     try {
-      const endpoint = campaignName
-        ? `/tracker/table?campaign=${encodeURIComponent(campaignName)}`
-        : '/tracker/table';
-      return await apiRequest<ApiResponse<{ events: TrackerEvent[]; count: number }>>(endpoint);
+      const TRACKER_URL = getTrackerUrl();
+      const user = getUser();
+      const url = campaignName
+        ? `${TRACKER_URL}/user/table?campaign=${encodeURIComponent(campaignName)}`
+        : `${TRACKER_URL}/user/table`;
+      const response = await fetch(url, {
+        headers: {
+          'X-User-ID': user?.user_id || '',
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`Tracker server returned ${response.status}`);
+      }
+      return await response.json();
     } catch (error: any) {
       // Don't log extension errors
       if (!isExtensionError(error)) {
-        console.warn('Tracker service not available:', error.message);
+      console.warn('Tracker server not available:', error.message);
       }
       return {
         success: false,
         error: 'TRACKER_NOT_RUNNING',
-        message: 'Tracker service is not reachable',
-        data: {
-          events: [],
-          count: 0,
-        },
-      } as ApiResponse<{ events: TrackerEvent[]; count: number }>;
+        message: 'Tracker server is not running',
+        events: [],
+      };
     }
   },
 };

@@ -56,7 +56,7 @@ def start_keep_alive():
 def generate_tracking_code(campaign_name):
     """Generate HTML tracking code for a specific campaign using campaign name as UID"""
     # Use environment variable for tracker URL, fallback to localhost for development
-    tracker_url = os.getenv('TRACKER_URL', 'http://31.97.239.75:3399')
+    tracker_url = os.getenv('TRACKER_URL', 'http://localhost:3003')
     
     # URL encode the campaign name to handle special characters
     import urllib.parse

@@ -9,7 +9,6 @@ import type { Campaign, TrackerEvent } from '../types';
 export const Tracker = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [selectedCampaign, setSelectedCampaign] = useState<string>('');
-  const [selectedCampaignId, setSelectedCampaignId] = useState<string>('');
   const [trackerData, setTrackerData] = useState<any>(null);
   const [events, setEvents] = useState<TrackerEvent[]>([]);
   const [activeTab, setActiveTab] = useState<'code' | 'analytics' | 'realtime' | 'table'>('code');
@@ -78,9 +77,9 @@ export const Tracker = () => {
         setTrackerData(analyticsResult.data || analyticsResult);
       }
 
-      if (tableResult.success && tableResult.data?.data) {
+      if (tableResult.success && (tableResult.data as any)?.data) {
         // Map the table data to events format
-        const mappedEvents = tableResult.data.data.map((record: any) => ({
+        const mappedEvents = ((tableResult.data as any).data as any[]).map((record: any) => ({
           email: record.email || '',
           event_type: 'open' as const,
           timestamp: record.last_open || record.timestamp || new Date().toISOString(),
@@ -92,8 +91,8 @@ export const Tracker = () => {
           last_open: record.last_open
         }));
         setEvents(mappedEvents);
-      } else if (tableResult.success && tableResult.data?.events) {
-        setEvents(tableResult.data.events);
+      } else if (tableResult.success && (tableResult.data as any)?.events) {
+        setEvents((tableResult.data as any).events);
       }
     } catch (error: any) {
       console.error('Error loading campaign data:', error);
@@ -255,7 +254,6 @@ export const Tracker = () => {
                       key={campaign.id}
                       onClick={() => {
                         setSelectedCampaign(campaign.name);
-                        setSelectedCampaignId(campaign.id);
                         setShowCampaignDropdown(false);
                         setCampaignSearchQuery('');
                       }}
@@ -378,13 +376,13 @@ export const Tracker = () => {
             <div className="bg-white rounded-xl shadow p-4 sm:p-6">
               <h3 className="text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">Unique Opens</h3>
               <p className="text-xl sm:text-2xl font-bold text-gray-800 truncate">
-                {trackerData?.unique_opens || new Set(opensData.map(e => e.email)).size || 0}
+                {trackerData?.unique_opens || new Set(opensData.map((e: TrackerEvent) => e.email)).size || 0}
               </p>
             </div>
             <div className="bg-white rounded-xl shadow p-4 sm:p-6">
               <h3 className="text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">Unique Clicks</h3>
               <p className="text-xl sm:text-2xl font-bold text-gray-800 truncate">
-                {trackerData?.unique_clicks || new Set(clicksData.map(e => e.email)).size || 0}
+                {trackerData?.unique_clicks || new Set(clicksData.map((e: TrackerEvent) => e.email)).size || 0}
               </p>
             </div>
           </div>
@@ -396,7 +394,7 @@ export const Tracker = () => {
                 <h3 className="text-base sm:text-lg font-semibold">📊 Email Opens</h3>
                 <button
                   onClick={() => {
-                    const opensTable = opensData.map(e => ({
+                    const opensTable = opensData.map((e: TrackerEvent) => ({
                       Email: e.email,
                       Name: e.name || 'N/A',
                       Instagram: e.instagram || 'N/A',
@@ -427,7 +425,7 @@ export const Tracker = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {opensData.map((event, idx) => (
+                      {opensData.map((event: TrackerEvent, idx: number) => (
                         <tr key={idx} className="border-t hover:bg-gray-50">
                           <td className="px-2 sm:px-4 py-2 break-words">{event.email}</td>
                           <td className="px-2 sm:px-4 py-2">{event.name || 'N/A'}</td>
@@ -452,7 +450,7 @@ export const Tracker = () => {
                 <h3 className="text-base sm:text-lg font-semibold">🔗 Link Clicks</h3>
                 <button
                   onClick={() => {
-                    const clicksTable = clicksData.map(e => ({
+                    const clicksTable = clicksData.map((e: TrackerEvent) => ({
                       Email: e.email,
                       Name: e.name || 'N/A',
                       Instagram: e.instagram || 'N/A',
@@ -481,7 +479,7 @@ export const Tracker = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {clicksData.map((event, idx) => (
+                      {clicksData.map((event: TrackerEvent, idx: number) => (
                         <tr key={idx} className="border-t hover:bg-gray-50">
                           <td className="px-2 sm:px-4 py-2 break-words">{event.email}</td>
                           <td className="px-2 sm:px-4 py-2">{event.name || 'N/A'}</td>

@@ -64,6 +64,11 @@ export interface TrackerEvent {
   timestamp: string;
   campaign: string;
   link_url?: string;
+  name?: string;
+  instagram?: string;
+  uid?: string;
+  open_count?: number;
+  last_open?: string;
 }
 
 export interface Requirement {

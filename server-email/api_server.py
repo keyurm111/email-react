@@ -13,6 +13,8 @@ import uuid
 from bson import ObjectId
 import threading
 import time
+import urllib.parse
+import re
 
 # Import existing backend modules
 from mongo_utils import (
@@ -171,14 +173,23 @@ def generate_tracking_code(campaign_name):
 <!-- Copy this code into your HTML email template -->
 
 <!-- 🔍 Open Tracking Pixel (Hidden) -->
-<img src="{tracker_url}/track/open?email={{{{email}}}}&uid={encoded_campaign_name}&name={{{{name}}}}&instagram={{{{instagram}}}}" 
+<img src="{tracker_url}/track/open?email={{{{Emails}}}}&uid={encoded_campaign_name}&name={{{{Name}}}}&instagram={{{{Social Medias}}}}" 
      width="1" height="1" style="display:none;" alt="Tracking Pixel" />
 
 <!-- 🔗 Click Tracking Links (Replace {{{{original_url}}}} with your actual URLs) -->
 <!-- Example: -->
-<a href="{tracker_url}/track/click?email={{{{email}}}}&uid={encoded_campaign_name}&redirect={{{{original_url}}}}&name={{{{name}}}}&instagram={{{{instagram}}}}">
+<a href="{tracker_url}/track/click?email={{{{Emails}}}}&uid={encoded_campaign_name}&redirect={{{{original_url}}}}&name={{{{Name}}}}&instagram={{{{Social Medias}}}}">
     Your Link Text
-</a>'''
+</a>
+
+<!-- 📊 How to use: -->
+<!-- 1. Replace {{{{Emails}}}} with the recipient's email (from CSV column "Emails") -->
+<!-- 2. Replace {{{{Name}}}} with the recipient's name (from CSV column "Name") -->
+<!-- 3. Replace {{{{Social Medias}}}} with the recipient's social media (from CSV column "Social Medias") -->
+<!-- 4. Replace {{{{original_url}}}} with the actual URL you want to redirect to -->
+<!-- 5. The system will automatically track opens and clicks -->
+<!-- 6. View tracking data in the Tracker page -->
+<!-- 7. Campaign name: {campaign_name} -->'''
     
     return tracking_code
 
@@ -1619,18 +1630,91 @@ def process_campaign_emails(campaign_id, campaign, user_id, force_immediate=Fals
                 campaign_history['processing_timestamps'][email] = datetime.now().isoformat()
                 
                 # Personalize template for this specific recipient (EXACTLY like Streamlit - lines 1384-1389)
+                # Enhanced to handle multiple column name variations for tracking
                 personalized_template = html_template
+                
+                # First, collect all column values
+                column_values = {}
                 for column in row.index:
+                    column_value = str(row[column]) if pd.notna(row[column]) else ''
+                    column_values[column.lower()] = column_value
+                
+                # Replace all placeholders
+                for column in row.index:
+                    column_value = column_values[column.lower()]
+                    
+                    # Replace exact column name placeholder
                     placeholder = f"{{{{{column}}}}}"
                     if placeholder in personalized_template:
-                        personalized_template = personalized_template.replace(placeholder, str(row[column]))
+                        personalized_template = personalized_template.replace(placeholder, column_value)
+                    
+                    # Also handle common variations for tracking pixel placeholders
+                    # This ensures tracking works even if CSV uses different column names
+                    column_lower = column.lower()
+                    
+                    # Email variations: Emails, Email, email
+                    if column_lower in ['emails', 'email']:
+                        for email_placeholder in ['{{{{Emails}}}}', '{{{{Email}}}}', '{{{{email}}}}']:
+                            if email_placeholder in personalized_template:
+                                # URL encode email for tracking URL
+                                encoded_email = urllib.parse.quote(column_value)
+                                personalized_template = personalized_template.replace(email_placeholder, encoded_email)
+                    
+                    # Name variations: Name, name
+                    if column_lower == 'name':
+                        for name_placeholder in ['{{{{Name}}}}', '{{{{name}}}}']:
+                            if name_placeholder in personalized_template:
+                                # URL encode name for tracking URL
+                                encoded_name = urllib.parse.quote(column_value)
+                                personalized_template = personalized_template.replace(name_placeholder, encoded_name)
+                    
+                    # Instagram/Social Medias variations: Instagram, instagram, Social Medias, social medias
+                    if column_lower in ['instagram', 'social medias', 'socialmedias']:
+                        for insta_placeholder in ['{{{{Instagram}}}}', '{{{{instagram}}}}', '{{{{Social Medias}}}}', '{{{{social medias}}}}', '{{{{SocialMedias}}}}']:
+                            if insta_placeholder in personalized_template:
+                                # URL encode instagram/social medias for tracking URL
+                                encoded_instagram = urllib.parse.quote(column_value)
+                                personalized_template = personalized_template.replace(insta_placeholder, encoded_instagram)
+                
+                # Replace any remaining tracking placeholders with empty strings (fallback)
+                # This ensures tracking URLs are valid even if CSV doesn't have Name/Instagram columns
+                remaining_placeholders = {
+                    '{{{{Emails}}}}': urllib.parse.quote(email),
+                    '{{{{Email}}}}': urllib.parse.quote(email),
+                    '{{{{email}}}}': urllib.parse.quote(email),
+                    '{{{{Name}}}}': '',
+                    '{{{{name}}}}': '',
+                    '{{{{Instagram}}}}': '',
+                    '{{{{instagram}}}}': '',
+                    '{{{{Social Medias}}}}': '',
+                    '{{{{social medias}}}}': '',
+                    '{{{{SocialMedias}}}}': ''
+                }
+                for placeholder, default_value in remaining_placeholders.items():
+                    if placeholder in personalized_template:
+                        personalized_template = personalized_template.replace(placeholder, default_value)
+                
+                # Debug: Verify tracking pixel is personalized (only log first email to avoid spam)
+                if idx == 0 and 'track/open?email=' in personalized_template:
+                    # Extract tracking URL to verify
+                    track_match = re.search(r'track/open\?email=([^&"\'<>]+)', personalized_template)
+                    if track_match:
+                        track_url = track_match.group(1)
+                        print(f"  ✅ Tracking pixel personalized for {email}: email={track_url[:50]}...")
+                    else:
+                        print(f"  ⚠️  WARNING: Tracking pixel found but URL format unexpected for {email}")
                 
                 batch_recipients.append(email)
                 batch_personalized_templates[email] = personalized_template
                 
                 # Add sender name if available (EXACTLY like Streamlit - lines 1394-1396)
-                if 'Name' in row.index:
-                    batch_sender_names[email] = str(row['Name'])
+                name_col = None
+                for col in row.index:
+                    if col.lower() == 'name':
+                        name_col = col
+                        break
+                if name_col:
+                    batch_sender_names[email] = str(row[name_col])
             
             # Send batch (EXACTLY like Streamlit - lines 1401-1412)
             subject_line = campaign.get('subject_line', 'Your Subject Here')

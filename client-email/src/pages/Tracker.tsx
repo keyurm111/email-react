@@ -3,14 +3,16 @@ import { Layout } from '../components/Layout';
 import { campaignsApi, trackerApi } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { formatDate } from '../utils/helpers';
+import { getTrackerUrl } from '../lib/apiConfig';
 import type { Campaign, TrackerEvent } from '../types';
 
 export const Tracker = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [selectedCampaign, setSelectedCampaign] = useState<string>('');
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string>('');
   const [trackerData, setTrackerData] = useState<any>(null);
   const [events, setEvents] = useState<TrackerEvent[]>([]);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'realtime' | 'table'>('analytics');
+  const [activeTab, setActiveTab] = useState<'code' | 'analytics' | 'realtime' | 'table'>('code');
   const [showCampaignDropdown, setShowCampaignDropdown] = useState(false);
   const [campaignSearchQuery, setCampaignSearchQuery] = useState('');
   const { showToast } = useToast();
@@ -76,7 +78,21 @@ export const Tracker = () => {
         setTrackerData(analyticsResult.data || analyticsResult);
       }
 
-      if (tableResult.success && tableResult.data?.events) {
+      if (tableResult.success && tableResult.data?.data) {
+        // Map the table data to events format
+        const mappedEvents = tableResult.data.data.map((record: any) => ({
+          email: record.email || '',
+          event_type: 'open' as const,
+          timestamp: record.last_open || record.timestamp || new Date().toISOString(),
+          campaign: campaignName,
+          name: record.name,
+          instagram: record.instagram,
+          uid: record.uid,
+          open_count: record.open_count || 1,
+          last_open: record.last_open
+        }));
+        setEvents(mappedEvents);
+      } else if (tableResult.success && tableResult.data?.events) {
         setEvents(tableResult.data.events);
       }
     } catch (error: any) {
@@ -90,6 +106,32 @@ export const Tracker = () => {
       'Tracker server is not running. Start it with: cd tracker && python run.py',
       'warning'
     );
+  };
+
+  const generateTrackingCode = (campaignName: string): string => {
+    const trackerUrl = getTrackerUrl();
+    const encodedCampaignName = encodeURIComponent(campaignName);
+    return `<!-- 📧 Email Tracking Code for Campaign: ${campaignName} -->
+<!-- Copy this code into your HTML email template -->
+
+<!-- 🔍 Open Tracking Pixel (Hidden) -->
+<img src="${trackerUrl}/track/open?email={{{{Emails}}}}&uid=${encodedCampaignName}&name={{{{Name}}}}&instagram={{{{Social Medias}}}}" 
+     width="1" height="1" style="display:none;" alt="Tracking Pixel" />
+
+<!-- 🔗 Click Tracking Links (Replace {{{{original_url}}}} with your actual URLs) -->
+<!-- Example: -->
+<a href="${trackerUrl}/track/click?email={{{{Emails}}}}&uid=${encodedCampaignName}&redirect={{{{original_url}}}}&name={{{{Name}}}}&instagram={{{{Social Medias}}}}">
+    Your Link Text
+</a>
+
+<!-- 📊 How to use: -->
+<!-- 1. Replace {{{{Emails}}}} with the recipient's email (from CSV column "Emails") -->
+<!-- 2. Replace {{{{Name}}}} with the recipient's name (from CSV column "Name") -->
+<!-- 3. Replace {{{{Social Medias}}}} with the recipient's social media (from CSV column "Social Medias") -->
+<!-- 4. Replace {{{{original_url}}}} with the actual URL you want to redirect to -->
+<!-- 5. The system will automatically track opens and clicks -->
+<!-- 6. View tracking data in the Tracker page -->
+<!-- 7. Campaign name: ${campaignName} -->`;
   };
 
   const downloadCSV = (data: any[], filename: string) => {
@@ -106,8 +148,32 @@ export const Tracker = () => {
     window.URL.revokeObjectURL(url);
   };
 
-  const opensData = events.filter((e) => e.event_type === 'open');
-  const clicksData = events.filter((e) => e.event_type === 'click');
+  // Get opens and clicks from tracker data if available, otherwise from events
+  const opensData = trackerData?.opens 
+    ? trackerData.opens.map((open: any) => ({
+        email: open.email || '',
+        event_type: 'open' as const,
+        timestamp: open.last_opened || open.timestamp || new Date().toISOString(),
+        campaign: selectedCampaign,
+        name: open.name,
+        instagram: open.instagram,
+        uid: open.uid,
+        open_count: open.open_count || 1,
+        last_open: open.last_opened
+      }))
+    : events.filter((e) => e.event_type === 'open');
+  
+  const clicksData = trackerData?.clicks
+    ? trackerData.clicks.map((click: any) => ({
+        email: click.email || '',
+        event_type: 'click' as const,
+        timestamp: click.timestamp || new Date().toISOString(),
+        campaign: selectedCampaign,
+        name: click.name,
+        instagram: click.instagram,
+        link_url: click.redirect_url
+      }))
+    : events.filter((e) => e.event_type === 'click');
 
   // Filter campaigns for search in dropdown
   const filteredCampaignOptions = campaigns.filter((campaign) => {
@@ -189,6 +255,7 @@ export const Tracker = () => {
                       key={campaign.id}
                       onClick={() => {
                         setSelectedCampaign(campaign.name);
+                        setSelectedCampaignId(campaign.id);
                         setShowCampaignDropdown(false);
                         setCampaignSearchQuery('');
                       }}
@@ -211,53 +278,231 @@ export const Tracker = () => {
       {/* Tabs */}
       <div className="border-b border-gray-200 mb-4 sm:mb-6 overflow-x-auto">
         <div className="flex gap-2 sm:gap-4 min-w-max sm:min-w-0">
-          {['analytics', 'realtime', 'table'].map((tab) => (
+          {[
+            { key: 'code', label: '📋 Tracking Code' },
+            { key: 'analytics', label: '📊 Analytics' },
+            { key: 'realtime', label: '📈 Real-time Data' },
+            { key: 'table', label: '📋 Campaign Table' }
+          ].map((tab) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab as any)}
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key as any)}
               className={`px-3 sm:px-4 py-2 text-sm sm:text-base font-medium transition-colors whitespace-nowrap ${
-                activeTab === tab
+                activeTab === tab.key
                   ? 'border-b-2 border-[#667eea] text-[#667eea]'
                   : 'text-gray-600 hover:text-gray-800'
               }`}
             >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {tab.label}
             </button>
           ))}
         </div>
       </div>
 
+      {/* Tracking Code Tab */}
+      {activeTab === 'code' && selectedCampaign && (
+        <div className="space-y-4 sm:space-y-6">
+          <section className="bg-white rounded-xl shadow p-4 sm:p-6">
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">📋 Your Tracking Code</h3>
+            <div className="mb-4 text-sm text-gray-600 space-y-2">
+              <p><strong>🎯 How to use this tracking code:</strong></p>
+              <ol className="list-decimal list-inside space-y-1 ml-2">
+                <li>Copy the code below</li>
+                <li>Paste it into your HTML email template</li>
+                <li>Replace <code className="bg-gray-100 px-1 rounded">{'{{email}}'}</code> with the recipient's email</li>
+                <li>Replace <code className="bg-gray-100 px-1 rounded">{'{{original_url}}'}</code> with your actual URLs</li>
+                <li>The system will automatically track opens and clicks</li>
+              </ol>
+            </div>
+            {(() => {
+              const campaign = campaigns.find(c => c.name === selectedCampaign);
+              const trackingCode = campaign?.template_data?.includes('track/open') 
+                ? campaign.template_data.match(/<!-- 📧 Email Tracking Code.*?-->/s)?.[0] || 
+                  campaign.template_data.match(/<img[^>]*track\/open[^>]*>/)?.[0] || 
+                  'Tracking code will be generated automatically when template is uploaded'
+                : generateTrackingCode(selectedCampaign);
+              
+              return (
+                <div className="bg-gray-50 rounded-lg p-3 sm:p-4 overflow-x-auto">
+                  <pre className="text-xs sm:text-sm text-gray-800 whitespace-pre-wrap font-mono">
+                    {trackingCode}
+                  </pre>
+                </div>
+              );
+            })()}
+            
+            {/* Campaign Information */}
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {(() => {
+                const campaign = campaigns.find(c => c.name === selectedCampaign);
+                const stats = campaign?.stats || { total_leads: 0, total_sent: 0, total_failed: 0 };
+                return (
+                  <>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-xs sm:text-sm text-gray-600 mb-1">Total Leads</p>
+                      <p className="text-xl sm:text-2xl font-bold text-gray-800">{stats.total_leads || 0}</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-xs sm:text-sm text-gray-600 mb-1">Emails Sent</p>
+                      <p className="text-xl sm:text-2xl font-bold text-gray-800">{stats.total_sent || 0}</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-xs sm:text-sm text-gray-600 mb-1">Emails Failed</p>
+                      <p className="text-xl sm:text-2xl font-bold text-gray-800">{stats.total_failed || 0}</p>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </section>
+        </div>
+      )}
+
       {/* Analytics Tab */}
       {activeTab === 'analytics' && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
-          <div className="bg-white rounded-xl shadow p-4 sm:p-6">
-            <h3 className="text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">Total Opens</h3>
-            <p className="text-xl sm:text-2xl font-bold text-gray-800 truncate">
-              {trackerData?.total_opens || opensData.length || 0}
-            </p>
+        <div className="space-y-4 sm:space-y-6">
+          {/* Summary Metrics */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+            <div className="bg-white rounded-xl shadow p-4 sm:p-6">
+              <h3 className="text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">Total Opens</h3>
+              <p className="text-xl sm:text-2xl font-bold text-gray-800 truncate">
+                {trackerData?.total_opens || opensData.length || 0}
+              </p>
+            </div>
+            <div className="bg-white rounded-xl shadow p-4 sm:p-6">
+              <h3 className="text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">Total Clicks</h3>
+              <p className="text-xl sm:text-2xl font-bold text-gray-800 truncate">
+                {trackerData?.total_clicks || clicksData.length || 0}
+              </p>
+            </div>
+            <div className="bg-white rounded-xl shadow p-4 sm:p-6">
+              <h3 className="text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">Unique Opens</h3>
+              <p className="text-xl sm:text-2xl font-bold text-gray-800 truncate">
+                {trackerData?.unique_opens || new Set(opensData.map(e => e.email)).size || 0}
+              </p>
+            </div>
+            <div className="bg-white rounded-xl shadow p-4 sm:p-6">
+              <h3 className="text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">Unique Clicks</h3>
+              <p className="text-xl sm:text-2xl font-bold text-gray-800 truncate">
+                {trackerData?.unique_clicks || new Set(clicksData.map(e => e.email)).size || 0}
+              </p>
+            </div>
           </div>
-          <div className="bg-white rounded-xl shadow p-4 sm:p-6">
-            <h3 className="text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">Total Clicks</h3>
-            <p className="text-xl sm:text-2xl font-bold text-gray-800 truncate">
-              {trackerData?.total_clicks || clicksData.length || 0}
-            </p>
-          </div>
-          <div className="bg-white rounded-xl shadow p-4 sm:p-6">
-            <h3 className="text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">Open Rate</h3>
-            <p className="text-xl sm:text-2xl font-bold text-gray-800 truncate">
-              {trackerData?.open_rate
-                ? `${(trackerData.open_rate * 100).toFixed(1)}%`
-                : 'N/A'}
-            </p>
-          </div>
-          <div className="bg-white rounded-xl shadow p-4 sm:p-6">
-            <h3 className="text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">Click Rate</h3>
-            <p className="text-xl sm:text-2xl font-bold text-gray-800 truncate">
-              {trackerData?.click_rate
-                ? `${(trackerData.click_rate * 100).toFixed(1)}%`
-                : 'N/A'}
-            </p>
-          </div>
+
+          {/* Email Opens Table */}
+          {opensData.length > 0 && (
+            <section className="bg-white rounded-xl shadow p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 gap-2">
+                <h3 className="text-base sm:text-lg font-semibold">📊 Email Opens</h3>
+                <button
+                  onClick={() => {
+                    const opensTable = opensData.map(e => ({
+                      Email: e.email,
+                      Name: e.name || 'N/A',
+                      Instagram: e.instagram || 'N/A',
+                      Time: formatDate(e.timestamp).split(' ')[1] || 'N/A',
+                      Date: formatDate(e.timestamp).split(' ')[0] || 'N/A',
+                      'Open Count': e.open_count || 1,
+                      'Last Open': e.last_open || formatDate(e.timestamp)
+                    }));
+                    downloadCSV(opensTable, `${selectedCampaign}_tracking.csv`);
+                  }}
+                  className="w-full sm:w-auto px-3 py-1.5 sm:py-1 text-xs sm:text-sm bg-[#667eea] text-white rounded hover:opacity-90 flex items-center justify-center gap-1 sm:gap-2"
+                >
+                  <i className="fas fa-download"></i> <span>Download Tracking Data (CSV)</span>
+                </button>
+              </div>
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+                  <table className="min-w-full text-xs sm:text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">Email</th>
+                        <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">Name</th>
+                        <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">Instagram</th>
+                        <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">Time</th>
+                        <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">Date</th>
+                        <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">Open Count</th>
+                        <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">Last Open</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {opensData.map((event, idx) => (
+                        <tr key={idx} className="border-t hover:bg-gray-50">
+                          <td className="px-2 sm:px-4 py-2 break-words">{event.email}</td>
+                          <td className="px-2 sm:px-4 py-2">{event.name || 'N/A'}</td>
+                          <td className="px-2 sm:px-4 py-2">{event.instagram || 'N/A'}</td>
+                          <td className="px-2 sm:px-4 py-2 whitespace-nowrap">{formatDate(event.timestamp).split(' ')[1] || 'N/A'}</td>
+                          <td className="px-2 sm:px-4 py-2 whitespace-nowrap">{formatDate(event.timestamp).split(' ')[0] || 'N/A'}</td>
+                          <td className="px-2 sm:px-4 py-2">{(event as any).open_count || 1}</td>
+                          <td className="px-2 sm:px-4 py-2 whitespace-nowrap">{(event as any).last_open || formatDate(event.timestamp)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Link Clicks Table */}
+          {clicksData.length > 0 && (
+            <section className="bg-white rounded-xl shadow p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 gap-2">
+                <h3 className="text-base sm:text-lg font-semibold">🔗 Link Clicks</h3>
+                <button
+                  onClick={() => {
+                    const clicksTable = clicksData.map(e => ({
+                      Email: e.email,
+                      Name: e.name || 'N/A',
+                      Instagram: e.instagram || 'N/A',
+                      Time: formatDate(e.timestamp).split(' ')[1] || 'N/A',
+                      Date: formatDate(e.timestamp).split(' ')[0] || 'N/A',
+                      'Clicked URL': e.link_url || 'N/A'
+                    }));
+                    downloadCSV(clicksTable, `${selectedCampaign}_clicks.csv`);
+                  }}
+                  className="w-full sm:w-auto px-3 py-1.5 sm:py-1 text-xs sm:text-sm bg-[#667eea] text-white rounded hover:opacity-90 flex items-center justify-center gap-1 sm:gap-2"
+                >
+                  <i className="fas fa-download"></i> <span>Download Click Data (CSV)</span>
+                </button>
+              </div>
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+                  <table className="min-w-full text-xs sm:text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">Email</th>
+                        <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">Name</th>
+                        <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">Instagram</th>
+                        <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">Time</th>
+                        <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">Date</th>
+                        <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">Clicked URL</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {clicksData.map((event, idx) => (
+                        <tr key={idx} className="border-t hover:bg-gray-50">
+                          <td className="px-2 sm:px-4 py-2 break-words">{event.email}</td>
+                          <td className="px-2 sm:px-4 py-2">{event.name || 'N/A'}</td>
+                          <td className="px-2 sm:px-4 py-2">{event.instagram || 'N/A'}</td>
+                          <td className="px-2 sm:px-4 py-2 whitespace-nowrap">{formatDate(event.timestamp).split(' ')[1] || 'N/A'}</td>
+                          <td className="px-2 sm:px-4 py-2 whitespace-nowrap">{formatDate(event.timestamp).split(' ')[0] || 'N/A'}</td>
+                          <td className="px-2 sm:px-4 py-2 break-all max-w-[200px] sm:max-w-none">{event.link_url || 'N/A'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {opensData.length === 0 && clicksData.length === 0 && (
+            <div className="bg-white rounded-xl shadow p-6 text-center text-gray-500">
+              <p>📊 No tracking data found for this campaign.</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -266,93 +511,58 @@ export const Tracker = () => {
         <div className="space-y-4 sm:space-y-6">
           <section className="bg-white rounded-xl shadow p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 gap-2">
-              <h3 className="text-base sm:text-lg font-semibold">Email Opens</h3>
-              {opensData.length > 0 && (
-                <button
-                  onClick={() => downloadCSV(opensData, `opens_${selectedCampaign}.csv`)}
-                  className="w-full sm:w-auto px-3 py-1.5 sm:py-1 text-xs sm:text-sm bg-[#667eea] text-white rounded hover:opacity-90 flex items-center justify-center gap-1 sm:gap-2"
-                >
-                  <i className="fas fa-download"></i> <span className="hidden sm:inline">Download CSV</span>
-                  <span className="sm:hidden">Download</span>
-                </button>
+              <h3 className="text-base sm:text-lg font-semibold">📈 Recent Activity</h3>
+              <button
+                onClick={() => {
+                  if (selectedCampaign) {
+                    loadCampaignData(selectedCampaign);
+                  }
+                }}
+                className="w-full sm:w-auto px-3 py-1.5 sm:py-1 text-xs sm:text-sm bg-[#667eea] text-white rounded hover:opacity-90 flex items-center justify-center gap-1 sm:gap-2"
+              >
+                <i className="fas fa-sync-alt"></i> <span>🔄 Refresh Data</span>
+              </button>
+            </div>
+            <div className="space-y-3">
+              {events.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 text-sm">
+                  <p>📊 No recent activity to display</p>
+                </div>
+              ) : (
+                events.slice(0, 5).map((event, idx) => (
+                  <div
+                    key={idx}
+                    className={`p-3 sm:p-4 rounded-lg ${
+                      event.event_type === 'open'
+                        ? 'bg-blue-50 border border-blue-200'
+                        : 'bg-green-50 border border-green-200'
+                    }`}
+                  >
+                    {event.event_type === 'open' ? (
+                      <div className="flex items-start gap-2">
+                        <i className="fas fa-envelope-open text-blue-600 mt-1"></i>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-800">
+                            📧 {event.email} opened email
+                            {(event as any).open_count > 1 && ` (${(event as any).open_count} time(s))`}
+                          </p>
+                          <p className="text-xs text-gray-600 mt-1">{formatDate(event.timestamp)}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-start gap-2">
+                        <i className="fas fa-link text-green-600 mt-1"></i>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-800">
+                            🔗 {event.email} clicked: {event.link_url || 'N/A'}
+                          </p>
+                          <p className="text-xs text-gray-600 mt-1">{formatDate(event.timestamp)}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))
               )}
-            </div>
-            <div className="overflow-x-auto -mx-4 sm:mx-0">
-              <div className="inline-block min-w-full align-middle px-4 sm:px-0">
-                <table className="min-w-full text-xs sm:text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
-                      <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">Email</th>
-                      <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">Timestamp</th>
-                      <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">Campaign</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {opensData.length === 0 ? (
-                    <tr>
-                        <td colSpan={3} className="px-2 sm:px-4 py-6 sm:py-8 text-center text-gray-500 text-xs sm:text-sm">
-                        No opens recorded yet
-                      </td>
-                    </tr>
-                  ) : (
-                    opensData.slice(0, 50).map((event, idx) => (
-                        <tr key={idx} className="border-t hover:bg-gray-50">
-                          <td className="px-2 sm:px-4 py-2 break-words">{event.email}</td>
-                          <td className="px-2 sm:px-4 py-2 whitespace-nowrap">{formatDate(event.timestamp)}</td>
-                          <td className="px-2 sm:px-4 py-2 truncate max-w-[150px]">{event.campaign}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-              </div>
-            </div>
-          </section>
-
-          <section className="bg-white rounded-xl shadow p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 gap-2">
-              <h3 className="text-base sm:text-lg font-semibold">Link Clicks</h3>
-              {clicksData.length > 0 && (
-                <button
-                  onClick={() => downloadCSV(clicksData, `clicks_${selectedCampaign}.csv`)}
-                  className="w-full sm:w-auto px-3 py-1.5 sm:py-1 text-xs sm:text-sm bg-[#667eea] text-white rounded hover:opacity-90 flex items-center justify-center gap-1 sm:gap-2"
-                >
-                  <i className="fas fa-download"></i> <span className="hidden sm:inline">Download CSV</span>
-                  <span className="sm:hidden">Download</span>
-                </button>
-              )}
-            </div>
-            <div className="overflow-x-auto -mx-4 sm:mx-0">
-              <div className="inline-block min-w-full align-middle px-4 sm:px-0">
-                <table className="min-w-full text-xs sm:text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
-                      <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">Email</th>
-                      <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">Link URL</th>
-                      <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">Timestamp</th>
-                      <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">Campaign</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {clicksData.length === 0 ? (
-                    <tr>
-                        <td colSpan={4} className="px-2 sm:px-4 py-6 sm:py-8 text-center text-gray-500 text-xs sm:text-sm">
-                        No clicks recorded yet
-                      </td>
-                    </tr>
-                  ) : (
-                    clicksData.slice(0, 50).map((event, idx) => (
-                        <tr key={idx} className="border-t hover:bg-gray-50">
-                          <td className="px-2 sm:px-4 py-2 break-words">{event.email}</td>
-                          <td className="px-2 sm:px-4 py-2 break-all max-w-[200px] sm:max-w-none">{event.link_url || 'N/A'}</td>
-                          <td className="px-2 sm:px-4 py-2 whitespace-nowrap">{formatDate(event.timestamp)}</td>
-                          <td className="px-2 sm:px-4 py-2 truncate max-w-[150px]">{event.campaign}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-              </div>
             </div>
           </section>
         </div>
@@ -362,14 +572,25 @@ export const Tracker = () => {
       {activeTab === 'table' && (
         <section className="bg-white rounded-xl shadow p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 gap-2">
-            <h3 className="text-base sm:text-lg font-semibold">Campaign Tracking Table</h3>
+            <h3 className="text-base sm:text-lg font-semibold">📋 Tracking Table</h3>
             {events.length > 0 && (
               <button
-                onClick={() => downloadCSV(events, `campaign_table_${selectedCampaign}.csv`)}
+                onClick={() => {
+                  const tableData = events.map(e => ({
+                    Email: e.email,
+                    Name: e.name || 'N/A',
+                    UID: e.uid || e.campaign || 'N/A',
+                    Instagram: e.instagram || 'N/A',
+                    Time: formatDate(e.timestamp).split(' ')[1] || 'N/A',
+                    Date: formatDate(e.timestamp).split(' ')[0] || 'N/A',
+                    'Open Count': (e as any).open_count || ((e as any).event_type === 'open' ? 1 : 0),
+                    'Last Open': (e as any).last_open || ((e as any).event_type === 'open' ? formatDate(e.timestamp) : 'N/A')
+                  }));
+                  downloadCSV(tableData, `${selectedCampaign}_campaign_table.csv`);
+                }}
                 className="w-full sm:w-auto px-3 py-1.5 sm:py-1 text-xs sm:text-sm bg-[#667eea] text-white rounded hover:opacity-90 flex items-center justify-center gap-1 sm:gap-2"
               >
-                <i className="fas fa-download"></i> <span className="hidden sm:inline">Download CSV</span>
-                <span className="sm:hidden">Download</span>
+                <i className="fas fa-download"></i> <span>Download Campaign Table (CSV)</span>
               </button>
             )}
           </div>
@@ -378,38 +599,34 @@ export const Tracker = () => {
               <table className="min-w-full text-xs sm:text-sm">
               <thead className="bg-gray-50">
                 <tr>
-                    <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">Email</th>
-                    <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">Event Type</th>
-                    <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">Timestamp</th>
-                    <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">Campaign</th>
-                    <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">Link URL</th>
+                    <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">📧 Email</th>
+                    <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">👤 Name</th>
+                    <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">🆔 UID</th>
+                    <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">📱 Instagram</th>
+                    <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">🕐 Time</th>
+                    <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">📅 Date</th>
+                    <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">🔢 Opens</th>
+                    <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700">🕕 Last Open</th>
                 </tr>
               </thead>
               <tbody>
                 {events.length === 0 ? (
                   <tr>
-                      <td colSpan={5} className="px-2 sm:px-4 py-6 sm:py-8 text-center text-gray-500 text-xs sm:text-sm">
-                      No tracking data available
+                      <td colSpan={8} className="px-2 sm:px-4 py-6 sm:py-8 text-center text-gray-500 text-xs sm:text-sm">
+                      No tracking data available for this campaign yet
                     </td>
                   </tr>
                 ) : (
-                  events.slice(0, 100).map((event, idx) => (
+                  events.map((event, idx) => (
                       <tr key={idx} className="border-t hover:bg-gray-50">
                         <td className="px-2 sm:px-4 py-2 break-words">{event.email}</td>
-                        <td className="px-2 sm:px-4 py-2">
-                        <span
-                            className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-xs ${
-                            event.event_type === 'open'
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-green-100 text-green-800'
-                          }`}
-                        >
-                          {event.event_type}
-                        </span>
-                      </td>
-                        <td className="px-2 sm:px-4 py-2 whitespace-nowrap">{formatDate(event.timestamp)}</td>
-                        <td className="px-2 sm:px-4 py-2 truncate max-w-[150px]">{event.campaign}</td>
-                        <td className="px-2 sm:px-4 py-2 break-all max-w-[200px] sm:max-w-none">{event.link_url || 'N/A'}</td>
+                        <td className="px-2 sm:px-4 py-2">{(event as any).name || 'N/A'}</td>
+                        <td className="px-2 sm:px-4 py-2">{(event as any).uid || event.campaign || 'N/A'}</td>
+                        <td className="px-2 sm:px-4 py-2">{(event as any).instagram || 'N/A'}</td>
+                        <td className="px-2 sm:px-4 py-2 whitespace-nowrap">{formatDate(event.timestamp).split(' ')[1] || 'N/A'}</td>
+                        <td className="px-2 sm:px-4 py-2 whitespace-nowrap">{formatDate(event.timestamp).split(' ')[0] || 'N/A'}</td>
+                        <td className="px-2 sm:px-4 py-2">{(event as any).open_count || ((event as any).event_type === 'open' ? 1 : 0)}</td>
+                        <td className="px-2 sm:px-4 py-2 whitespace-nowrap">{(event as any).last_open || ((event as any).event_type === 'open' ? formatDate(event.timestamp) : 'N/A')}</td>
                     </tr>
                   ))
                 )}
@@ -417,6 +634,13 @@ export const Tracker = () => {
             </table>
             </div>
           </div>
+          {events.length > 0 && (
+            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-sm text-green-800">
+                ✅ Found {events.length} tracking records for campaign: {selectedCampaign}
+              </p>
+            </div>
+          )}
         </section>
       )}
     </Layout>

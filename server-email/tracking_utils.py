@@ -28,10 +28,11 @@ def inject_tracking_pixel(html_content: str, tracker_server: str, campaign_name:
     encoded_campaign_name = urllib.parse.quote(campaign_name)
     
     # Create tracking pixel HTML (using placeholders that match CSV column names)
-    # The personalization code checks for: 'Emails' or 'Email' or 'email', 'Name' or 'name', etc.
-    # Use uppercase 'Emails' as primary (matches most CSV files), but also support lowercase
-    # The pixel will be personalized with actual column names from CSV during email sending
-    tracking_pixel = f'''<img src="{tracker_server}/track/open?email={{{{Emails}}}}&uid={campaign_name}&name={{{{Name}}}}&instagram={{{{Instagram}}}}" width="1" height="1" style="display:none;" alt="Tracking Pixel" />'''
+    # CSV columns: Name, Emails, Social Medias, Website
+    # The personalization code will replace these placeholders with actual CSV values
+    # IMPORTANT: Use encoded_campaign_name in URL to handle special characters
+    # Note: Instagram parameter uses "Social Medias" column from CSV
+    tracking_pixel = f'''<img src="{tracker_server}/track/open?email={{{{Emails}}}}&uid={encoded_campaign_name}&name={{{{Name}}}}&instagram={{{{Social Medias}}}}" width="1" height="1" style="display:none;" alt="Tracking Pixel" />'''
     
     # Check if tracking pixel already exists
     if 'track/open?email=' in html_content:

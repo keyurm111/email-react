@@ -12,10 +12,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 if __name__ == '__main__':
     # Import and run the API server
-    from api_server import app, start_email_worker
+    from api_server import app, start_email_worker, get_tracker_url
     
     port = int(os.getenv('API_PORT', 7027))
     debug = os.getenv('DEBUG', 'False').lower() == 'true'
+    tracker_url = get_tracker_url()
     
     print("=" * 60)
     print("🚀 Bulk Email Automation - API Server")
@@ -23,6 +24,7 @@ if __name__ == '__main__':
     print(f"📡 Server: http://localhost:{port}")
     print(f"📊 Debug Mode: {debug}")
     print(f"🔗 CORS: Enabled for frontend")
+    print(f"📡 Tracker URL: {tracker_url}")
     print(f"💾 MongoDB: {os.getenv('MONGO_URI', 'Not configured')}")
     print("=" * 60)
     print("\n✅ Server is starting...\n")

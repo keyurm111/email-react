@@ -3,7 +3,7 @@ Flask REST API Server for Bulk Email Automation System
 Connects HTML/CSS/JS frontend with Python backend
 """
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, has_request_context
 from flask_cors import CORS
 from flask.json.provider import DefaultJSONProvider
 import os
@@ -45,19 +45,9 @@ def get_tracker_url():
     if tracker_url:
         return tracker_url.rstrip('/')
 
-    production_host = os.getenv('PRODUCTION_HOST', '31.97.239.75')
-    hostname = os.getenv('HOSTNAME', '')
-    server_name = os.getenv('SERVER_NAME', '')
-
-    is_production = (
-        production_host in hostname or
-        production_host in server_name or
-        os.getenv('ENVIRONMENT', '').lower() == 'production' or
-        os.getenv('PRODUCTION', '').lower() == 'true'
-    )
-
-    if is_production:
-        return f'http://{production_host}:7027/tracker'
+    if has_request_context():
+        host_url = request.host_url.rstrip('/')
+        return f'{host_url}/tracker'
 
     # Default to local tracker within the backend
     return 'http://127.0.0.1:7027/tracker'

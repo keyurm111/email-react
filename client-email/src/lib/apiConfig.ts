@@ -1,23 +1,27 @@
 // Dynamic API URL based on current location
 export const getApiBaseUrl = () => {
-  // If environment variable is set, use it
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
-  
-  // Default to production backend
-  return 'http://31.97.239.75:7027/api';
+
+  if (typeof window !== 'undefined') {
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    const port = window.location.port ? `:${window.location.port}` : '';
+    return `${protocol}//${hostname}${port}/api`;
+  }
+
+  // Fallback for SSR or unknown environment
+  return 'http://127.0.0.1:7027/api';
 };
 
-// Dynamic Tracker URL based on current location
+// Tracker URL shares the same host as the API
 export const getTrackerUrl = () => {
-  // If environment variable is set, use it
   if (import.meta.env.VITE_TRACKER_URL) {
     return import.meta.env.VITE_TRACKER_URL;
   }
 
-  // Default to production tracker
-  return 'http://31.97.239.75:3399';
+  return `${getBaseUrl()}/tracker`;
 };
 
 // Get base URL without /api for Socket.IO connections

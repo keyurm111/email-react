@@ -29,6 +29,7 @@ from email_sender import (
     test_smtp_connection, send_batch_emails
 )
 from tracking_utils import inject_tracking_pixel, remove_tracking_pixel
+from tracker_routes import tracker_bp
 import hashlib
 import pandas as pd
 import io
@@ -36,16 +37,30 @@ import io
 # Load environment variables
 load_dotenv()
 
-# Tracker URL configuration - production default
+# Tracker URL configuration
 def get_tracker_url():
-    """Get tracker URL (defaults to production tracker)"""
+    """Get tracker URL for open/click tracking endpoints."""
     # If environment variable is explicitly set, use it
     tracker_url = os.getenv('TRACKER_URL')
     if tracker_url:
         return tracker_url.rstrip('/')
 
-    # Default to production tracker
-    return 'http://31.97.239.75:3399'
+    production_host = os.getenv('PRODUCTION_HOST', '31.97.239.75')
+    hostname = os.getenv('HOSTNAME', '')
+    server_name = os.getenv('SERVER_NAME', '')
+
+    is_production = (
+        production_host in hostname or
+        production_host in server_name or
+        os.getenv('ENVIRONMENT', '').lower() == 'production' or
+        os.getenv('PRODUCTION', '').lower() == 'true'
+    )
+
+    if is_production:
+        return f'http://{production_host}:7027/tracker'
+
+    # Default to local tracker within the backend
+    return 'http://127.0.0.1:7027/tracker'
 
 # Custom JSON provider to handle MongoDB ObjectId
 class MongoJSONProvider(DefaultJSONProvider):
@@ -58,6 +73,7 @@ class MongoJSONProvider(DefaultJSONProvider):
 app = Flask(__name__)
 app.json = MongoJSONProvider(app)
 CORS(app)  # Enable CORS for frontend
+app.register_blueprint(tracker_bp)
 
 # MongoDB collection names
 SENDER_FILE = "senders"

@@ -13,10 +13,9 @@ export default defineConfig({
         secure: false,
       },
       '/tracker': {
-        target: 'http://localhost:3003',
+        target: 'http://localhost:7027',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/tracker/, ''),
       },
     },
   },

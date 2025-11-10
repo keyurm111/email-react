@@ -46,10 +46,27 @@ def get_tracker_url():
         return tracker_url.rstrip('/')
 
     if has_request_context():
-        host_url = request.host_url.rstrip('/')
-        return f'{host_url}/tracker'
+        forwarded_host = request.headers.get('X-Forwarded-Host')
+        forwarded_proto = request.headers.get('X-Forwarded-Proto')
+        forwarded_port = request.headers.get('X-Forwarded-Port')
 
-    # Default to local tracker within the backend
+        if forwarded_host:
+            scheme = forwarded_proto or request.scheme
+            host_with_port = forwarded_host
+            if forwarded_port and ':' not in forwarded_host:
+                host_with_port = f'{forwarded_host}:{forwarded_port}'
+            return f'{scheme}://{host_with_port}/tracker'
+
+        return f'{request.scheme}://{request.host}/tracker'
+
+    production_host = os.getenv('PRODUCTION_HOST')
+    if production_host:
+        scheme = os.getenv('PRODUCTION_SCHEME', 'https')
+        port = os.getenv('PRODUCTION_PORT')
+        if port:
+            return f'{scheme}://{production_host}:{port}/tracker'
+        return f'{scheme}://{production_host}/tracker'
+
     return 'http://127.0.0.1:7027/tracker'
 
 # Custom JSON provider to handle MongoDB ObjectId

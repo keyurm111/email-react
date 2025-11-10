@@ -36,33 +36,16 @@ import io
 # Load environment variables
 load_dotenv()
 
-# Tracker URL configuration - auto-detect local vs production
+# Tracker URL configuration - production default
 def get_tracker_url():
-    """Get tracker URL based on environment (local or production)"""
+    """Get tracker URL (defaults to production tracker)"""
     # If environment variable is explicitly set, use it
     tracker_url = os.getenv('TRACKER_URL')
     if tracker_url:
         return tracker_url.rstrip('/')
-    
-    # Auto-detect environment
-    # Check if running in production (Hostinger server)
-    production_ip = '31.97.239.75'
-    hostname = os.getenv('HOSTNAME', '')
-    server_name = os.getenv('SERVER_NAME', '')
-    
-    # Check if production environment is detected
-    is_production = (
-        production_ip in hostname or
-        production_ip in server_name or
-        os.getenv('ENVIRONMENT', '').lower() == 'production' or
-        os.getenv('PRODUCTION', '').lower() == 'true'
-    )
-    
-    if is_production:
-        return 'http://31.97.239.75:3399'
-    else:
-        # Default to local tracker
-        return 'http://localhost:3003'
+
+    # Default to production tracker
+    return 'http://31.97.239.75:3399'
 
 # Custom JSON provider to handle MongoDB ObjectId
 class MongoJSONProvider(DefaultJSONProvider):

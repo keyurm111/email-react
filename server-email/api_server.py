@@ -30,6 +30,7 @@ from email_sender import (
 )
 from tracking_utils import inject_tracking_pixel, remove_tracking_pixel
 from tracker_routes import tracker_bp
+import re
 import hashlib
 import pandas as pd
 import io
@@ -68,6 +69,32 @@ def get_tracker_url():
         return f'{scheme}://{production_host}/tracker'
 
     return 'http://127.0.0.1:7027/tracker'
+
+
+def normalize_tracker_urls(html_content: str) -> str:
+    """Ensure tracking URLs always use the correct host and path."""
+    if not html_content:
+        return html_content
+
+    tracker_url = get_tracker_url()
+    replacements = [
+        'http://127.0.0.1:7027/tracker',
+        'https://127.0.0.1:7027/tracker',
+        'http://localhost:7027/tracker',
+        'https://localhost:7027/tracker',
+        'http://127.0.0.1:3003',
+        'https://127.0.0.1:3003',
+        'http://localhost:3003',
+        'https://localhost:3003',
+    ]
+
+    normalized = html_content
+    for old in replacements:
+        normalized = normalized.replace(old, tracker_url)
+
+    normalized = re.sub(r'/track/(open|click)\?', r'/tracker/track/\1?', normalized)
+
+    return normalized
 
 # Custom JSON provider to handle MongoDB ObjectId
 class MongoJSONProvider(DefaultJSONProvider):
@@ -1074,6 +1101,7 @@ def upload_template(campaign_id):
         tracker_server = get_tracker_url()
         print(f"Injecting tracking pixel (tracker: {tracker_server})...", file=sys.stderr)
         template_with_tracking = inject_tracking_pixel(template_text, tracker_server, campaign_name)
+        template_with_tracking = normalize_tracker_urls(template_with_tracking)
         print(f"✓ Tracking pixel injected", file=sys.stderr)
         
         # Verify tracking pixel was injected
@@ -1148,6 +1176,7 @@ def inject_tracking_endpoint(campaign_id):
         # Inject tracking pixel
         tracker_url = get_tracker_url()
         updated_template = inject_tracking_pixel(template_content, campaign['name'], tracker_url)
+        updated_template = normalize_tracker_urls(updated_template)
         
         # Store updated template DIRECTLY in campaign (Streamlit pattern)
         campaign['template_data'] = updated_template
@@ -1710,6 +1739,8 @@ def process_campaign_emails(campaign_id, campaign, user_id, force_immediate=Fals
                     else:
                         print(f"  ⚠️  WARNING: Tracking pixel found but URL format unexpected for {email}")
                 
+                personalized_template = normalize_tracker_urls(personalized_template)
+
                 batch_recipients.append(email)
                 batch_personalized_templates[email] = personalized_template
                 

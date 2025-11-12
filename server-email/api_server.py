@@ -206,19 +206,19 @@ def generate_tracking_code(campaign_name):
 <!-- Copy this code into your HTML email template -->
 
 <!-- 🔍 Open Tracking Pixel (Hidden) -->
-<img src="{tracker_url}/track/open?email={{{{Emails}}}}&uid={encoded_campaign_name}&name={{{{Name}}}}&instagram={{{{Social Medias}}}}" 
+<img src="{tracker_url}/track/open?email={{{{Emails}}}}&uid={encoded_campaign_name}&name={{{{Name}}}}&instagram={{{{Instagram}}}}" 
      width="1" height="1" style="display:none;" alt="Tracking Pixel" />
 
 <!-- 🔗 Click Tracking Links (Replace {{{{original_url}}}} with your actual URLs) -->
 <!-- Example: -->
-<a href="{tracker_url}/track/click?email={{{{Emails}}}}&uid={encoded_campaign_name}&redirect={{{{original_url}}}}&name={{{{Name}}}}&instagram={{{{Social Medias}}}}">
+<a href="{tracker_url}/track/click?email={{{{Emails}}}}&uid={encoded_campaign_name}&redirect={{{{original_url}}}}&name={{{{Name}}}}&instagram={{{{Instagram}}}}">
     Your Link Text
 </a>
 
 <!-- 📊 How to use: -->
 <!-- 1. Replace {{{{Emails}}}} with the recipient's email (from CSV column "Emails") -->
 <!-- 2. Replace {{{{Name}}}} with the recipient's name (from CSV column "Name") -->
-<!-- 3. Replace {{{{Social Medias}}}} with the recipient's social media (from CSV column "Social Medias") -->
+<!-- 3. Replace {{{{Instagram}}}} with the recipient's Instagram (from CSV column "Instagram") -->
 <!-- 4. Replace {{{{original_url}}}} with the actual URL you want to redirect to -->
 <!-- 5. The system will automatically track opens and clicks -->
 <!-- 6. View tracking data in the Tracker page -->

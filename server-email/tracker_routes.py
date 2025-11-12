@@ -22,20 +22,41 @@ _indexes_initialized = False
 def _get_tracking_collection():
     """Return the MongoDB collection used for tracking data."""
     global _indexes_initialized
-    db = get_database()
-    if db is None:
-        logger.error("Unable to connect to MongoDB for tracking")
-        return None
+    try:
+        db = get_database()
+        if db is None:
+            logger.error("Unable to connect to MongoDB for tracking - get_database() returned None")
+            print("❌ Tracker: Unable to connect to MongoDB - get_database() returned None")
+            print("   Check MONGO_URI environment variable and MongoDB connection")
+            return None
 
-    collection = db[TRACKING_COLLECTION]
-    if not _indexes_initialized:
+        collection = db[TRACKING_COLLECTION]
+        if not _indexes_initialized:
+            try:
+                collection.create_index([('email', 1), ('campaign_name', 1), ('type', 1)], background=True)
+                collection.create_index([('timestamp', -1)], background=True)
+                logger.info("Tracker: Created indexes on %s collection", TRACKING_COLLECTION)
+                print(f"✅ Tracker: Created indexes on {TRACKING_COLLECTION} collection")
+            except Exception as exc:  # pragma: no cover - index creation failure is non-critical
+                logger.warning("Tracker index creation skipped: %s", exc)
+                print(f"⚠️  Tracker: Index creation skipped: {exc}")
+            _indexes_initialized = True
+        
+        # Test the collection by doing a simple operation
         try:
-            collection.create_index([('email', 1), ('campaign_name', 1), ('type', 1)], background=True)
-            collection.create_index([('timestamp', -1)], background=True)
-        except Exception as exc:  # pragma: no cover - index creation failure is non-critical
-            logger.warning("Tracker index creation skipped: %s", exc)
-        _indexes_initialized = True
-    return collection
+            collection.count_documents({}, limit=1)
+        except Exception as test_exc:
+            logger.error("Tracker: Collection test failed: %s", test_exc)
+            print(f"❌ Tracker: Collection test failed: {test_exc}")
+            return None
+            
+        return collection
+    except Exception as exc:
+        logger.error("Tracker: Error getting tracking collection: %s", exc, exc_info=True)
+        print(f"❌ Tracker: Error getting tracking collection: {exc}")
+        import traceback
+        traceback.print_exc()
+        return None
 
 
 def _tracking_pixel_response():
@@ -67,10 +88,13 @@ def track_open():
 
     if not email or not campaign_name:
         logger.warning("Tracking open missing email or campaign parameters")
+        print(f"⚠️  Tracker: Missing parameters - email: {email}, campaign: {campaign_name}")
         return _tracking_pixel_response()
 
     collection = _get_tracking_collection()
     if collection is None:
+        logger.error("Tracker: Database collection is None - cannot save tracking data")
+        print("❌ Tracker: Database collection is None - check MongoDB connection")
         return _tracking_pixel_response()
 
     now = datetime.utcnow()
@@ -82,7 +106,7 @@ def track_open():
         })
 
         if existing_record:
-            collection.update_one(
+            result = collection.update_one(
                 {'_id': existing_record['_id']},
                 {
                     '$set': {
@@ -93,8 +117,14 @@ def track_open():
                     '$inc': {'open_count': 1}
                 }
             )
+            if result.modified_count > 0:
+                logger.info("✅ Tracker: Updated open count for %s in campaign %s", email, campaign_name)
+                print(f"✅ Tracker: Updated open count for {email} in campaign {campaign_name}")
+            else:
+                logger.warning("Tracker: Update did not modify any records for %s", email)
+                print(f"⚠️  Tracker: Update did not modify any records for {email}")
         else:
-            collection.insert_one({
+            insert_result = collection.insert_one({
                 'type': 'open',
                 'email': email,
                 'name': name,
@@ -109,8 +139,18 @@ def track_open():
                 'user_agent': request.headers.get('User-Agent', ''),
                 'timestamp': now.isoformat()
             })
+            if insert_result.inserted_id:
+                logger.info("✅ Tracker: Saved new open tracking for %s in campaign %s (ID: %s)", email, campaign_name, insert_result.inserted_id)
+                print(f"✅ Tracker: Saved new open tracking for {email} in campaign {campaign_name} (ID: {insert_result.inserted_id})")
+            else:
+                logger.error("Tracker: Insert failed - no ID returned for %s", email)
+                print(f"❌ Tracker: Insert failed - no ID returned for {email}")
     except Exception as exc:
-        logger.error("Failed to track open for %s (%s): %s", email, campaign_name, exc)
+        error_msg = f"Failed to track open for {email} ({campaign_name}): {exc}"
+        logger.error(error_msg, exc_info=True)
+        print(f"❌ Tracker Error: {error_msg}")
+        import traceback
+        traceback.print_exc()
 
     return _tracking_pixel_response()
 

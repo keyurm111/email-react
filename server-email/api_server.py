@@ -92,31 +92,7 @@ def normalize_tracker_urls(html_content: str) -> str:
     for old in replacements:
         normalized = normalized.replace(old, tracker_url)
 
-    # Fix: Remove duplicate /tracker patterns (e.g., /tracker/tracker/track/open -> /tracker/track/open)
-    normalized = re.sub(r'/tracker+/track/', '/tracker/track/', normalized)
-    
-    # Fix: Replace any old /track/open? or /track/click? patterns that don't have the correct base URL
-    # Only replace if the URL doesn't already contain the correct tracker_url
-    def fix_tracking_path(match):
-        full_url = match.group(0)
-        action = match.group(1)  # 'open' or 'click'
-        params = match.group(2) if match.group(2) else ''  # query parameters
-        
-        # If URL already contains the correct tracker_url, just fix the path if needed
-        if tracker_url in full_url:
-            # Just ensure path is correct (remove any duplicates)
-            return re.sub(r'/tracker+/track/', '/tracker/track/', full_url)
-        else:
-            # Replace entire URL with correct tracker URL
-            return f'{tracker_url}/track/{action}?{params}'
-    
-    # Match tracking URLs: http(s)://host/track/(open|click)?params
-    normalized = re.sub(
-        r'https?://[^\s"\'<>]+?/track/(open|click)\?([^\s"\'<>]*)',
-        fix_tracking_path,
-        normalized,
-        flags=re.IGNORECASE
-    )
+    normalized = re.sub(r'/track/(open|click)\?', r'/tracker/track/\1?', normalized)
 
     return normalized
 

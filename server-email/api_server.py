@@ -92,7 +92,12 @@ def normalize_tracker_urls(html_content: str) -> str:
     for old in replacements:
         normalized = normalized.replace(old, tracker_url)
 
-    normalized = re.sub(r'/track/(open|click)\?', r'/tracker/track/\1?', normalized)
+    # Fix: Only replace /track/(open|click)? if NOT already part of /tracker/track/
+    # Use negative lookbehind to ensure we don't match /tracker/track/open
+    normalized = re.sub(r'(?<!tracker/)/track/(open|click)\?', r'/tracker/track/\1?', normalized)
+    
+    # Also fix any duplicate /tracker patterns (e.g., /tracker/tracker/track/open -> /tracker/track/open)
+    normalized = re.sub(r'/tracker+/track/', '/tracker/track/', normalized)
 
     return normalized
 
@@ -1175,7 +1180,7 @@ def inject_tracking_endpoint(campaign_id):
         
         # Inject tracking pixel
         tracker_url = get_tracker_url()
-        updated_template = inject_tracking_pixel(template_content, campaign['name'], tracker_url)
+        updated_template = inject_tracking_pixel(template_content, tracker_url, campaign['name'])
         updated_template = normalize_tracker_urls(updated_template)
         
         # Store updated template DIRECTLY in campaign (Streamlit pattern)

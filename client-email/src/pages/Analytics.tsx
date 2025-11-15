@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Layout } from '../components/Layout';
-import { analyticsApi, campaignsApi } from '../services/api';
+import { analyticsApi, campaignsApi, trackerApi } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { formatNumber, calculatePercentage } from '../utils/helpers';
 import type { Campaign } from '../types';
@@ -39,6 +39,15 @@ interface AnalyticsStats {
   total_campaigns: number;
 }
 
+interface TrackingStats {
+  total_opens: number;
+  unique_opens: number;
+  total_clicks: number;
+  unique_emails: number;
+  open_rate: number;
+  click_rate: number;
+}
+
 export const Analytics = () => {
   const [stats, setStats] = useState<AnalyticsStats>({
     total_sent: 0,
@@ -51,6 +60,15 @@ export const Analytics = () => {
   const [campaignSearchQuery, setCampaignSearchQuery] = useState('');
   const [showCampaignDropdown, setShowCampaignDropdown] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [trackingStats, setTrackingStats] = useState<TrackingStats>({
+    total_opens: 0,
+    unique_opens: 0,
+    total_clicks: 0,
+    unique_emails: 0,
+    open_rate: 0,
+    click_rate: 0,
+  });
+  const [campaignTrackingData, setCampaignTrackingData] = useState<Record<string, TrackingStats>>({});
   const { showToast } = useToast();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -78,9 +96,10 @@ export const Analytics = () => {
   const loadAnalytics = async () => {
     try {
       setLoading(true);
-      const [analyticsResult, campaignsResult] = await Promise.all([
+      const [analyticsResult, campaignsResult, trackerResult] = await Promise.all([
         analyticsApi.getAnalytics(),
         campaignsApi.getCampaigns(),
+        trackerApi.getTrackerCampaigns().catch(() => ({ success: false, campaigns: [] })), // Don't fail if tracker is unavailable
       ]);
 
       if (analyticsResult.success) {
@@ -93,9 +112,53 @@ export const Analytics = () => {
         });
       }
 
+      const campaignsList: Campaign[] = campaignsResult.success
+        ? ((campaignsResult as any).campaigns || campaignsResult.data?.campaigns || [])
+        : [];
+
       if (campaignsResult.success) {
-        const campaignsList = (campaignsResult as any).campaigns || campaignsResult.data?.campaigns || [];
         setCampaigns(campaignsList);
+      }
+
+      // Load tracking data
+      if (trackerResult.success && (trackerResult as any).campaigns) {
+        const trackingCampaigns = (trackerResult as any).campaigns || [];
+        
+        // Get total sent from analytics result (not from state which might not be updated yet)
+        const analyticsData = (analyticsResult as any).stats || analyticsResult.data?.stats || {};
+        const totalSent = analyticsData.total_sent || 0;
+        
+        // Calculate overall tracking stats
+        const overallTracking: TrackingStats = trackingCampaigns.reduce((acc: TrackingStats, campaign: any) => ({
+          total_opens: acc.total_opens + (campaign.total_opens || 0),
+          unique_opens: acc.unique_opens + (campaign.unique_opens || 0),
+          total_clicks: acc.total_clicks + (campaign.total_clicks || 0),
+          unique_emails: Math.max(acc.unique_emails, campaign.unique_emails || 0), // Use max for unique emails
+          open_rate: 0, // Will calculate below
+          click_rate: 0, // Will calculate below
+        }), { total_opens: 0, unique_opens: 0, total_clicks: 0, unique_emails: 0, open_rate: 0, click_rate: 0 });
+
+        // Calculate rates based on total sent emails
+        overallTracking.open_rate = totalSent > 0 ? (overallTracking.total_opens / totalSent) * 100 : 0;
+        overallTracking.click_rate = totalSent > 0 ? (overallTracking.total_clicks / totalSent) * 100 : 0;
+
+        setTrackingStats(overallTracking);
+
+        // Store per-campaign tracking data
+        const campaignTracking: Record<string, TrackingStats> = {};
+        trackingCampaigns.forEach((campaign: any) => {
+          // Get campaign sent count for rate calculation
+          const campaignSent = campaignsList.find((c: Campaign) => c.name === campaign.campaign_name)?.stats?.total_sent || 0;
+          campaignTracking[campaign.campaign_name] = {
+            total_opens: campaign.total_opens || 0,
+            unique_opens: campaign.unique_opens || 0,
+            total_clicks: campaign.total_clicks || 0,
+            unique_emails: campaign.unique_emails || 0,
+            open_rate: campaignSent > 0 ? ((campaign.total_opens || 0) / campaignSent) * 100 : (campaign.open_rate || 0),
+            click_rate: campaignSent > 0 ? ((campaign.total_clicks || 0) / campaignSent) * 100 : (campaign.click_rate || 0),
+          };
+        });
+        setCampaignTrackingData(campaignTracking);
       }
     } catch (error: any) {
       console.error('Error loading analytics:', error);
@@ -145,6 +208,17 @@ export const Analytics = () => {
         };
       })()
     : null;
+
+  // Get tracking stats for selected campaign or overall
+  const displayTrackingStats = selectedCampaignId !== 'all'
+    ? (() => {
+        const selectedCampaign = campaigns.find(c => c.id === selectedCampaignId);
+        if (!selectedCampaign) {
+          return trackingStats;
+        }
+        return campaignTrackingData[selectedCampaign.name] || trackingStats;
+      })()
+    : trackingStats;
 
   // Use filtered stats if campaign selected, otherwise use overall stats
   const displayStats = filteredStats || {
@@ -254,57 +328,126 @@ export const Analytics = () => {
             <i className="fas fa-spinner fa-spin text-xl sm:text-2xl text-gray-400"></i>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6">
-            {/* Total Sent */}
-            <div className="bg-blue-50 rounded-lg p-3 sm:p-6 flex items-center gap-2 sm:gap-4 border-l-4 border-blue-500">
-              <div className="bg-blue-100 rounded-full p-2 sm:p-4 flex-shrink-0">
-                <i className="fas fa-paper-plane text-blue-600 text-lg sm:text-2xl"></i>
+          <>
+            {/* Email Sending Stats */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 mb-4 sm:mb-6">
+              {/* Total Sent */}
+              <div className="bg-blue-50 rounded-lg p-3 sm:p-6 flex items-center gap-2 sm:gap-4 border-l-4 border-blue-500">
+                <div className="bg-blue-100 rounded-full p-2 sm:p-4 flex-shrink-0">
+                  <i className="fas fa-paper-plane text-blue-600 text-lg sm:text-2xl"></i>
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-lg sm:text-2xl font-bold text-gray-800 truncate">{formatNumber(displayStats.total_sent)}</h3>
+                  <p className="text-xs sm:text-sm text-gray-600">Total Sent</p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <h3 className="text-lg sm:text-2xl font-bold text-gray-800 truncate">{formatNumber(displayStats.total_sent)}</h3>
-                <p className="text-xs sm:text-sm text-gray-600">Total Sent</p>
+
+              {/* Total Failed */}
+              <div className="bg-red-50 rounded-lg p-3 sm:p-6 flex items-center gap-2 sm:gap-4 border-l-4 border-red-500">
+                <div className="bg-red-100 rounded-full p-2 sm:p-4 flex-shrink-0">
+                  <i className="fas fa-times-circle text-red-600 text-lg sm:text-2xl"></i>
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-lg sm:text-2xl font-bold text-gray-800 truncate">{formatNumber(displayStats.total_failed)}</h3>
+                  <p className="text-xs sm:text-sm text-gray-600">Total Failed</p>
+                </div>
+              </div>
+
+              {/* Success Rate */}
+              <div className="bg-green-50 rounded-lg p-3 sm:p-6 flex items-center gap-2 sm:gap-4 border-l-4 border-green-500">
+                <div className="bg-green-100 rounded-full p-2 sm:p-4 flex-shrink-0">
+                  <i className="fas fa-check-circle text-green-600 text-lg sm:text-2xl"></i>
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-lg sm:text-2xl font-bold text-gray-800 truncate">{displayStats.successRate}%</h3>
+                  <p className="text-xs sm:text-sm text-gray-600">Success Rate</p>
+                </div>
+              </div>
+
+              {/* Total Campaigns / Total Leads */}
+              <div className="bg-purple-50 rounded-lg p-3 sm:p-6 flex items-center gap-2 sm:gap-4 border-l-4 border-purple-500">
+                <div className="bg-purple-100 rounded-full p-2 sm:p-4 flex-shrink-0">
+                  <i className={`fas ${selectedCampaignId === 'all' ? 'fa-tasks' : 'fa-users'} text-purple-600 text-lg sm:text-2xl`}></i>
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-lg sm:text-2xl font-bold text-gray-800 truncate">
+                    {selectedCampaignId === 'all' 
+                      ? formatNumber(campaigns.length) 
+                      : formatNumber(displayStats.total_leads)}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-gray-600">
+                    {selectedCampaignId === 'all' ? 'Total Campaigns' : 'Total Leads'}
+                  </p>
+                </div>
               </div>
             </div>
 
-            {/* Total Failed */}
-            <div className="bg-red-50 rounded-lg p-3 sm:p-6 flex items-center gap-2 sm:gap-4 border-l-4 border-red-500">
-              <div className="bg-red-100 rounded-full p-2 sm:p-4 flex-shrink-0">
-                <i className="fas fa-times-circle text-red-600 text-lg sm:text-2xl"></i>
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-lg sm:text-2xl font-bold text-gray-800 truncate">{formatNumber(displayStats.total_failed)}</h3>
-                <p className="text-xs sm:text-sm text-gray-600">Total Failed</p>
-              </div>
-            </div>
+            {/* Tracking Stats */}
+            <div className="border-t border-gray-200 pt-4 sm:pt-6">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center gap-2">
+                <i className="fas fa-chart-line"></i> Email Tracking Metrics
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+                {/* Total Opens */}
+                <div className="bg-cyan-50 rounded-lg p-3 sm:p-4 border-l-4 border-cyan-500">
+                  <div className="flex items-center gap-2 mb-1">
+                    <i className="fas fa-envelope-open text-cyan-600 text-sm sm:text-base"></i>
+                    <h4 className="text-lg sm:text-xl font-bold text-gray-800">{formatNumber(displayTrackingStats.total_opens)}</h4>
+                  </div>
+                  <p className="text-xs text-gray-600">Total Opens</p>
+                </div>
 
-            {/* Success Rate */}
-            <div className="bg-green-50 rounded-lg p-3 sm:p-6 flex items-center gap-2 sm:gap-4 border-l-4 border-green-500">
-              <div className="bg-green-100 rounded-full p-2 sm:p-4 flex-shrink-0">
-                <i className="fas fa-check-circle text-green-600 text-lg sm:text-2xl"></i>
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-lg sm:text-2xl font-bold text-gray-800 truncate">{displayStats.successRate}%</h3>
-                <p className="text-xs sm:text-sm text-gray-600">Success Rate</p>
-              </div>
-            </div>
+                {/* Unique Opens */}
+                <div className="bg-indigo-50 rounded-lg p-3 sm:p-4 border-l-4 border-indigo-500">
+                  <div className="flex items-center gap-2 mb-1">
+                    <i className="fas fa-user-check text-indigo-600 text-sm sm:text-base"></i>
+                    <h4 className="text-lg sm:text-xl font-bold text-gray-800">{formatNumber(displayTrackingStats.unique_opens)}</h4>
+                  </div>
+                  <p className="text-xs text-gray-600">Unique Opens</p>
+                </div>
 
-            {/* Total Campaigns / Total Leads */}
-            <div className="bg-purple-50 rounded-lg p-3 sm:p-6 flex items-center gap-2 sm:gap-4 border-l-4 border-purple-500">
-              <div className="bg-purple-100 rounded-full p-2 sm:p-4 flex-shrink-0">
-                <i className={`fas ${selectedCampaignId === 'all' ? 'fa-tasks' : 'fa-users'} text-purple-600 text-lg sm:text-2xl`}></i>
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-lg sm:text-2xl font-bold text-gray-800 truncate">
-                  {selectedCampaignId === 'all' 
-                    ? formatNumber(campaigns.length) 
-                    : formatNumber(displayStats.total_leads)}
-                </h3>
-                <p className="text-xs sm:text-sm text-gray-600">
-                  {selectedCampaignId === 'all' ? 'Total Campaigns' : 'Total Leads'}
-                </p>
+                {/* Total Clicks */}
+                <div className="bg-orange-50 rounded-lg p-3 sm:p-4 border-l-4 border-orange-500">
+                  <div className="flex items-center gap-2 mb-1">
+                    <i className="fas fa-mouse-pointer text-orange-600 text-sm sm:text-base"></i>
+                    <h4 className="text-lg sm:text-xl font-bold text-gray-800">{formatNumber(displayTrackingStats.total_clicks)}</h4>
+                  </div>
+                  <p className="text-xs text-gray-600">Total Clicks</p>
+                </div>
+
+                {/* Open Rate */}
+                <div className="bg-teal-50 rounded-lg p-3 sm:p-4 border-l-4 border-teal-500">
+                  <div className="flex items-center gap-2 mb-1">
+                    <i className="fas fa-percentage text-teal-600 text-sm sm:text-base"></i>
+                    <h4 className="text-lg sm:text-xl font-bold text-gray-800">
+                      {displayTrackingStats.open_rate > 0 ? displayTrackingStats.open_rate.toFixed(1) : '0'}%
+                    </h4>
+                  </div>
+                  <p className="text-xs text-gray-600">Open Rate</p>
+                </div>
+
+                {/* Click Rate */}
+                <div className="bg-pink-50 rounded-lg p-3 sm:p-4 border-l-4 border-pink-500">
+                  <div className="flex items-center gap-2 mb-1">
+                    <i className="fas fa-hand-pointer text-pink-600 text-sm sm:text-base"></i>
+                    <h4 className="text-lg sm:text-xl font-bold text-gray-800">
+                      {displayTrackingStats.click_rate > 0 ? displayTrackingStats.click_rate.toFixed(1) : '0'}%
+                    </h4>
+                  </div>
+                  <p className="text-xs text-gray-600">Click Rate</p>
+                </div>
+
+                {/* Unique Emails */}
+                <div className="bg-amber-50 rounded-lg p-3 sm:p-4 border-l-4 border-amber-500">
+                  <div className="flex items-center gap-2 mb-1">
+                    <i className="fas fa-users text-amber-600 text-sm sm:text-base"></i>
+                    <h4 className="text-lg sm:text-xl font-bold text-gray-800">{formatNumber(displayTrackingStats.unique_emails)}</h4>
+                  </div>
+                  <p className="text-xs text-gray-600">Unique Recipients</p>
+                </div>
               </div>
             </div>
-          </div>
+          </>
         )}
       </section>
 

@@ -3,7 +3,6 @@ import { Layout } from '../components/Layout';
 import { campaignsApi, trackerApi } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { formatDate } from '../utils/helpers';
-import { getTrackerUrl } from '../lib/apiConfig';
 import type { Campaign, TrackerEvent } from '../types';
 
 export const Tracker = () => {
@@ -11,7 +10,7 @@ export const Tracker = () => {
   const [selectedCampaign, setSelectedCampaign] = useState<string>('');
   const [trackerData, setTrackerData] = useState<any>(null);
   const [events, setEvents] = useState<TrackerEvent[]>([]);
-  const [activeTab, setActiveTab] = useState<'code' | 'analytics' | 'realtime' | 'table'>('code');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'realtime' | 'table'>('analytics');
   const [showCampaignDropdown, setShowCampaignDropdown] = useState(false);
   const [campaignSearchQuery, setCampaignSearchQuery] = useState('');
   const { showToast } = useToast();
@@ -107,31 +106,6 @@ export const Tracker = () => {
     );
   };
 
-  const generateTrackingCode = (campaignName: string): string => {
-    const trackerUrl = getTrackerUrl();
-    const encodedCampaignName = encodeURIComponent(campaignName);
-    return `<!-- 📧 Email Tracking Code for Campaign: ${campaignName} -->
-<!-- Copy this code into your HTML email template -->
-
-<!-- 🔍 Open Tracking Pixel (Hidden) -->
-<img src="${trackerUrl}/track/open?email={{{{Emails}}}}&uid=${encodedCampaignName}&name={{{{Name}}}}&instagram={{{{Social Medias}}}}" 
-     width="1" height="1" style="display:none;" alt="Tracking Pixel" />
-
-<!-- 🔗 Click Tracking Links (Replace {{{{original_url}}}} with your actual URLs) -->
-<!-- Example: -->
-<a href="${trackerUrl}/track/click?email={{{{Emails}}}}&uid=${encodedCampaignName}&redirect={{{{original_url}}}}&name={{{{Name}}}}&instagram={{{{Social Medias}}}}">
-    Your Link Text
-</a>
-
-<!-- 📊 How to use: -->
-<!-- 1. Replace {{{{Emails}}}} with the recipient's email (from CSV column "Emails") -->
-<!-- 2. Replace {{{{Name}}}} with the recipient's name (from CSV column "Name") -->
-<!-- 3. Replace {{{{Social Medias}}}} with the recipient's social media (from CSV column "Social Medias") -->
-<!-- 4. Replace {{{{original_url}}}} with the actual URL you want to redirect to -->
-<!-- 5. The system will automatically track opens and clicks -->
-<!-- 6. View tracking data in the Tracker page -->
-<!-- 7. Campaign name: ${campaignName} -->`;
-  };
 
   const downloadCSV = (data: any[], filename: string) => {
     const csv = [
@@ -277,7 +251,6 @@ export const Tracker = () => {
       <div className="border-b border-gray-200 mb-4 sm:mb-6 overflow-x-auto">
         <div className="flex gap-2 sm:gap-4 min-w-max sm:min-w-0">
           {[
-            { key: 'code', label: '📋 Tracking Code' },
             { key: 'analytics', label: '📊 Analytics' },
             { key: 'realtime', label: '📈 Real-time Data' },
             { key: 'table', label: '📋 Campaign Table' }
@@ -296,65 +269,6 @@ export const Tracker = () => {
           ))}
         </div>
       </div>
-
-      {/* Tracking Code Tab */}
-      {activeTab === 'code' && selectedCampaign && (
-        <div className="space-y-4 sm:space-y-6">
-          <section className="bg-white rounded-xl shadow p-4 sm:p-6">
-            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">📋 Your Tracking Code</h3>
-            <div className="mb-4 text-sm text-gray-600 space-y-2">
-              <p><strong>🎯 How to use this tracking code:</strong></p>
-              <ol className="list-decimal list-inside space-y-1 ml-2">
-                <li>Copy the code below</li>
-                <li>Paste it into your HTML email template</li>
-                <li>Replace <code className="bg-gray-100 px-1 rounded">{'{{email}}'}</code> with the recipient's email</li>
-                <li>Replace <code className="bg-gray-100 px-1 rounded">{'{{original_url}}'}</code> with your actual URLs</li>
-                <li>The system will automatically track opens and clicks</li>
-              </ol>
-            </div>
-            {(() => {
-              const campaign = campaigns.find(c => c.name === selectedCampaign);
-              const trackingCode = campaign?.template_data?.includes('track/open') 
-                ? campaign.template_data.match(/<!-- 📧 Email Tracking Code.*?-->/s)?.[0] || 
-                  campaign.template_data.match(/<img[^>]*track\/open[^>]*>/)?.[0] || 
-                  'Tracking code will be generated automatically when template is uploaded'
-                : generateTrackingCode(selectedCampaign);
-              
-              return (
-                <div className="bg-gray-50 rounded-lg p-3 sm:p-4 overflow-x-auto">
-                  <pre className="text-xs sm:text-sm text-gray-800 whitespace-pre-wrap font-mono">
-                    {trackingCode}
-                  </pre>
-                </div>
-              );
-            })()}
-            
-            {/* Campaign Information */}
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {(() => {
-                const campaign = campaigns.find(c => c.name === selectedCampaign);
-                const stats = campaign?.stats || { total_leads: 0, total_sent: 0, total_failed: 0 };
-                return (
-                  <>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-xs sm:text-sm text-gray-600 mb-1">Total Leads</p>
-                      <p className="text-xl sm:text-2xl font-bold text-gray-800">{stats.total_leads || 0}</p>
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-xs sm:text-sm text-gray-600 mb-1">Emails Sent</p>
-                      <p className="text-xl sm:text-2xl font-bold text-gray-800">{stats.total_sent || 0}</p>
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-xs sm:text-sm text-gray-600 mb-1">Emails Failed</p>
-                      <p className="text-xl sm:text-2xl font-bold text-gray-800">{stats.total_failed || 0}</p>
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-          </section>
-        </div>
-      )}
 
       {/* Analytics Tab */}
       {activeTab === 'analytics' && (

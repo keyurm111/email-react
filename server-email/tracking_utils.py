@@ -32,7 +32,19 @@ def inject_tracking_pixel(html_content: str, tracker_server: str, campaign_name:
     # The personalization code will replace these placeholders with actual CSV values
     # IMPORTANT: Use encoded_campaign_name in URL to handle special characters
     # Note: Instagram parameter uses "Instagram" column from CSV
-    tracking_pixel = f'''<img src="{tracker_server}/track/open?email={{{{Emails}}}}&uid={encoded_campaign_name}&name={{{{Name}}}}&instagram={{{{Instagram}}}}" width="1" height="1" style="display:none;" alt="Tracking Pixel" />'''
+    # Ensure tracker_server ends with /tracker, then add /track/open
+    # The Flask route is /tracker/track/open (blueprint prefix /tracker + route /track/open)
+    if tracker_server.endswith('/tracker'):
+        # Already has /tracker, just add /track/open
+        tracking_url = f"{tracker_server}/track/open"
+    elif '/tracker/' in tracker_server or tracker_server.endswith('/tracker/'):
+        # Has /tracker/ in path, ensure correct format
+        tracking_url = f"{tracker_server.rstrip('/')}/track/open"
+    else:
+        # No /tracker in URL, add it
+        tracking_url = f"{tracker_server}/tracker/track/open"
+    
+    tracking_pixel = f'''<img src="{tracking_url}?email={{{{Emails}}}}&uid={encoded_campaign_name}&name={{{{Name}}}}&instagram={{{{Instagram}}}}" width="1" height="1" style="display:none;" alt="Tracking Pixel" />'''
     
     # Check if tracking pixel already exists
     if 'track/open?email=' in html_content:

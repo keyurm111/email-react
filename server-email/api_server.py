@@ -77,6 +77,15 @@ def normalize_tracker_urls(html_content: str) -> str:
         return html_content
 
     tracker_url = get_tracker_url()
+    # Remove trailing slash from tracker_url for consistency
+    tracker_url = tracker_url.rstrip('/')
+    
+    # STEP 1: First, fix any duplicate /tracker patterns (MUST BE FIRST)
+    # This handles cases like /tracker/tracker/tracker/track/open -> /tracker/track/open
+    normalized = html_content
+    normalized = re.sub(r'/tracker+/track/', '/tracker/track/', normalized)
+    
+    # STEP 2: Replace old localhost/127.0.0.1 base URLs with current tracker URL
     replacements = [
         'http://127.0.0.1:7027/tracker',
         'https://127.0.0.1:7027/tracker',
@@ -88,15 +97,55 @@ def normalize_tracker_urls(html_content: str) -> str:
         'https://localhost:3003',
     ]
 
-    normalized = html_content
     for old in replacements:
         normalized = normalized.replace(old, tracker_url)
 
-    # Fix: Only replace /track/(open|click)? if NOT already part of /tracker/track/
-    # Use negative lookbehind to ensure we don't match /tracker/track/open
-    normalized = re.sub(r'(?<!tracker/)/track/(open|click)\?', r'/tracker/track/\1?', normalized)
+    # STEP 3: Fix URLs that have /track/(open|click)? but NOT /tracker/track/
+    # Only match if NOT already preceded by /tracker/
+    # Pattern: Match http(s)://host/path/track/(open|click)? but NOT if /tracker/ is before /track/
+    def replace_track_path(match):
+        full_url = match.group(0)
+        # If URL already contains /tracker/track/, don't modify it
+        if '/tracker/track/' in full_url:
+            return full_url
+        # Replace /track/ with /tracker/track/
+        return full_url.replace('/track/', '/tracker/track/')
     
-    # Also fix any duplicate /tracker patterns (e.g., /tracker/tracker/track/open -> /tracker/track/open)
+    # Match URLs with /track/(open|click)? that don't already have /tracker/track/
+    normalized = re.sub(
+        r'https?://[^\s"\'<>]+?/track/(open|click)\?[^\s"\'<>]*',
+        replace_track_path,
+        normalized,
+        flags=re.IGNORECASE
+    )
+    
+    # STEP 4: Final cleanup - remove any remaining duplicate /tracker patterns
+    normalized = re.sub(r'/tracker+/track/', '/tracker/track/', normalized)
+    
+    # STEP 5: Ensure all tracker URLs use the correct base URL
+    # Only replace URLs that have /tracker/track/ path but wrong host (localhost, 127.0.0.1, etc.)
+    def fix_base_url(match):
+        full_url = match.group(0)
+        # Extract path and query
+        import urllib.parse
+        parsed = urllib.parse.urlparse(full_url)
+        if parsed.path.startswith('/tracker/track/'):
+            # Only fix if host is localhost or 127.0.0.1 (wrong host)
+            if 'localhost' in parsed.netloc or '127.0.0.1' in parsed.netloc:
+                # Reconstruct with correct base URL
+                query_part = f'?{parsed.query}' if parsed.query else '?'
+                return f'{tracker_url}{parsed.path}{query_part}'
+        return full_url
+    
+    # Match any URL with /tracker/track/ path
+    normalized = re.sub(
+        r'https?://[^\s"\'<>]+?/tracker/track/(open|click)\?[^\s"\'<>]*',
+        fix_base_url,
+        normalized,
+        flags=re.IGNORECASE
+    )
+    
+    # STEP 6: One more cleanup pass for any duplicates that might have been created
     normalized = re.sub(r'/tracker+/track/', '/tracker/track/', normalized)
 
     return normalized

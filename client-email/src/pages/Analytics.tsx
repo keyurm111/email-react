@@ -1232,23 +1232,23 @@ export const Analytics = () => {
 
       {/* Campaign Performance - only for specific campaign (not All Campaigns) */}
       {selectedCampaignId !== 'all' && (
-        <section className="bg-white rounded-xl shadow-md p-4 sm:p-6">
-          <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 sm:mb-6 flex items-center gap-2">
-            <i className="fas fa-chart-bar"></i> Campaign Performance
-          </h2>
-          
-          {loading ? (
-            <div className="text-center py-6 sm:py-8">
-              <i className="fas fa-spinner fa-spin text-xl sm:text-2xl text-gray-400"></i>
-            </div>
-          ) : filteredCampaigns.length === 0 ? (
-            <div className="text-center py-8 sm:py-12 text-gray-500">
-              <i className="fas fa-inbox text-3xl sm:text-4xl mb-2 sm:mb-4"></i>
+      <section className="bg-white rounded-xl shadow-md p-4 sm:p-6">
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 sm:mb-6 flex items-center gap-2">
+          <i className="fas fa-chart-bar"></i> Campaign Performance
+        </h2>
+        
+        {loading ? (
+          <div className="text-center py-6 sm:py-8">
+            <i className="fas fa-spinner fa-spin text-xl sm:text-2xl text-gray-400"></i>
+          </div>
+        ) : filteredCampaigns.length === 0 ? (
+          <div className="text-center py-8 sm:py-12 text-gray-500">
+            <i className="fas fa-inbox text-3xl sm:text-4xl mb-2 sm:mb-4"></i>
               <p className="text-sm sm:text-base">No campaign selected</p>
-            </div>
-          ) : (
-            <div className="space-y-3 sm:space-y-4">
-              {filteredCampaigns.map((campaign) => {
+          </div>
+        ) : (
+          <div className="space-y-3 sm:space-y-4">
+            {filteredCampaigns.map((campaign) => {
               const campaignStats = campaign.stats || { total_leads: 0, total_sent: 0, total_failed: 0 };
               const totalSent = campaignStats.total_sent || 0;
               const totalFailed = campaignStats.total_failed || 0;
@@ -1316,13 +1316,13 @@ export const Analytics = () => {
                         {formatNumber(totalSent)} / {formatNumber(totalLeads)} sent ({progress}%)
                       </p>
                     </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
       )}
     </Layout>
   );

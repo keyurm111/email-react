@@ -73,3 +73,22 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 )
+
+// Register service worker for PWA (only in production & when supported)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/service-worker.js')
+      .then((registration) => {
+        if (import.meta.env.DEV) {
+          console.log('Service worker registered:', registration.scope)
+        }
+      })
+      .catch((error) => {
+        if (import.meta.env.DEV) {
+          console.error('Service worker registration failed:', error)
+        }
+      })
+  })
+}
+

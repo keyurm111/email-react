@@ -903,7 +903,7 @@ export const Campaigns = () => {
                 </div>
                 {showFilterCountryDropdown && (
                   <div className="absolute z-40 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                    {filteredFilterCountries.map((country) => (
+                    {filteredFilterCountries.map((country: any) => (
                       <button
                         key={country.isoCode}
                         type="button"

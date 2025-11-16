@@ -21,6 +21,9 @@ export interface Campaign {
   id: string;
   name: string;
   description?: string;
+  country?: string;
+  state?: string;
+  city?: string;
   status: 'draft' | 'running' | 'paused' | 'completed';
   created_at: string;
   selected_senders?: string[];

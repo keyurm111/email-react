@@ -4,6 +4,8 @@ import { analyticsApi, campaignsApi, trackerApi } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { formatNumber, calculatePercentage } from '../utils/helpers';
 import type { Campaign } from '../types';
+// @ts-ignore - react-simple-maps doesn't ship perfect TS typings
+import { ComposableMap, Geographies, Geography } from 'react-simple-maps';
 import {
   Chart as ChartJS,
   ArcElement,
@@ -48,6 +50,30 @@ interface TrackingStats {
   click_rate: number;
 }
 
+interface StateStats {
+  name: string;
+  total_sent: number;
+  total_failed: number;
+  success_rate: number;
+}
+
+interface CityStats {
+  name: string;
+  total_sent: number;
+  total_failed: number;
+  success_rate: number;
+}
+
+interface CountryStats {
+  country: string;
+  total_sent: number;
+  total_failed: number;
+  tracked_emails: number;
+  success_rate: number;
+  states: StateStats[];
+  cities: CityStats[];
+}
+
 export const Analytics = () => {
   const [stats, setStats] = useState<AnalyticsStats>({
     total_sent: 0,
@@ -69,8 +95,15 @@ export const Analytics = () => {
     click_rate: 0,
   });
   const [campaignTrackingData, setCampaignTrackingData] = useState<Record<string, TrackingStats>>({});
+  const [countryStats, setCountryStats] = useState<CountryStats[]>([]);
+  const [hoveredCountry, setHoveredCountry] = useState<CountryStats | null>(null);
+  const [locationModalCountry, setLocationModalCountry] = useState<CountryStats | null>(null);
+  const [selectedCountry, setSelectedCountry] = useState<CountryStats | null>(null);
   const { showToast } = useToast();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const hoverTimeoutRef = useRef<number | null>(null);
+
+  const geoUrl = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
 
   useEffect(() => {
     loadAnalytics();
@@ -120,7 +153,64 @@ export const Analytics = () => {
         setCampaigns(campaignsList);
       }
 
-      // Load tracking data
+      // ---------- Country-level stats (overall, not filtered) ----------
+      // Use an internal aggregation structure with state/city maps for per-country breakdown
+      const countryAggMap = new Map<
+        string,
+        {
+          country: string;
+          total_sent: number;
+          total_failed: number;
+          tracked_emails: number;
+          states: Map<string, { total_sent: number; total_failed: number }>;
+          cities: Map<string, { total_sent: number; total_failed: number }>;
+        }
+      >();
+
+      campaignsList.forEach((campaign) => {
+        const countryName = (campaign.country || '').trim();
+        if (!countryName) return;
+        const sent = campaign.stats?.total_sent || 0;
+        const failed = campaign.stats?.total_failed || 0;
+        const stateName = (campaign.state || '').trim();
+        const cityName = (campaign.city || '').trim();
+
+        if (!countryAggMap.has(countryName)) {
+          countryAggMap.set(countryName, {
+            country: countryName,
+            total_sent: 0,
+            total_failed: 0,
+            tracked_emails: 0,
+            states: new Map(),
+            cities: new Map(),
+          });
+        }
+        const entry = countryAggMap.get(countryName)!;
+        entry.total_sent += sent;
+        entry.total_failed += failed;
+
+        // Aggregate per-state stats
+        if (stateName) {
+          if (!entry.states.has(stateName)) {
+            entry.states.set(stateName, { total_sent: 0, total_failed: 0 });
+          }
+          const stateEntry = entry.states.get(stateName)!;
+          stateEntry.total_sent += sent;
+          stateEntry.total_failed += failed;
+        }
+
+        // Aggregate per-city stats
+        if (cityName) {
+          if (!entry.cities.has(cityName)) {
+            entry.cities.set(cityName, { total_sent: 0, total_failed: 0 });
+          }
+          const cityEntry = entry.cities.get(cityName)!;
+          cityEntry.total_sent += sent;
+          cityEntry.total_failed += failed;
+        }
+      });
+
+      // Load tracking data (used for overall stats + per-country tracked emails)
       if (trackerResult.success && (trackerResult as any).campaigns) {
         const trackingCampaigns = (trackerResult as any).campaigns || [];
         
@@ -159,7 +249,71 @@ export const Analytics = () => {
           };
         });
         setCampaignTrackingData(campaignTracking);
+        
+        // Add tracked emails per country using campaign mapping
+        trackingCampaigns.forEach((campaign: any) => {
+          const campaignName = campaign.campaign_name;
+          const matchingCampaign = campaignsList.find((c: Campaign) => c.name === campaignName);
+          const countryName = matchingCampaign?.country?.trim();
+          if (!countryName) return;
+          if (!countryAggMap.has(countryName)) {
+            countryAggMap.set(countryName, {
+              country: countryName,
+              total_sent: 0,
+              total_failed: 0,
+              tracked_emails: 0,
+              states: new Map(),
+              cities: new Map(),
+            });
+          }
+          const entry = countryAggMap.get(countryName)!;
+          entry.tracked_emails += campaign.unique_emails || 0;
+        });
       }
+
+      // Finalize success rate per country
+      const countryStatsArray: CountryStats[] = Array.from(countryAggMap.values()).map((entry) => {
+        const totalAttempts = entry.total_sent + entry.total_failed;
+
+        const states: StateStats[] = Array.from(entry.states.entries()).map(
+          ([name, s]) => {
+            const attempts = s.total_sent + s.total_failed;
+            return {
+              name,
+              total_sent: s.total_sent,
+              total_failed: s.total_failed,
+              success_rate: attempts > 0 ? (s.total_sent / attempts) * 100 : 0,
+            };
+          }
+        );
+
+        const cities: CityStats[] = Array.from(entry.cities.entries()).map(
+          ([name, c]) => {
+            const attempts = c.total_sent + c.total_failed;
+            return {
+              name,
+              total_sent: c.total_sent,
+              total_failed: c.total_failed,
+              success_rate: attempts > 0 ? (c.total_sent / attempts) * 100 : 0,
+            };
+          }
+        );
+
+        // Sort by total_sent descending so most important locations are first
+        states.sort((a, b) => b.total_sent - a.total_sent);
+        cities.sort((a, b) => b.total_sent - a.total_sent);
+
+        return {
+          country: entry.country,
+          total_sent: entry.total_sent,
+          total_failed: entry.total_failed,
+          tracked_emails: entry.tracked_emails,
+          success_rate: totalAttempts > 0 ? (entry.total_sent / totalAttempts) * 100 : 0,
+          states,
+          cities,
+        };
+      });
+      setCountryStats(countryStatsArray);
     } catch (error: any) {
       console.error('Error loading analytics:', error);
       showToast('Error loading analytics', 'error');
@@ -254,7 +408,7 @@ export const Analytics = () => {
               </button>
               
               {showCampaignDropdown && (
-                <div className="absolute right-0 sm:right-auto mt-2 w-full sm:w-80 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-96 overflow-hidden flex flex-col">
+                <div className="absolute left-0 sm:left-auto sm:right-0 mt-2 w-full sm:w-80 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-96 overflow-hidden flex flex-col">
                   {/* Search Input */}
                   <div className="p-2 sm:p-3 border-b border-gray-200">
                     <div className="relative">
@@ -679,24 +833,422 @@ export const Analytics = () => {
         </section>
       )}
 
-      {/* Campaign Performance */}
-      <section className="bg-white rounded-xl shadow-md p-4 sm:p-6">
-        <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 sm:mb-6 flex items-center gap-2">
-          <i className="fas fa-chart-bar"></i> Campaign Performance
-        </h2>
-        
-        {loading ? (
-          <div className="text-center py-6 sm:py-8">
-            <i className="fas fa-spinner fa-spin text-xl sm:text-2xl text-gray-400"></i>
+      {/* World Map - Country-wise Performance (Overall) */}
+      {countryStats.length > 0 && (
+        <section className="bg-white rounded-xl shadow-md p-3 sm:p-6 mb-2 sm:mb-6 max-w-6xl mx-auto">
+          <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+            <div className="w-full lg:flex-[4] lg:pr-4">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-1 sm:mb-2 flex items-center gap-2">
+                <i className="fas fa-globe-americas"></i> Global Email Reach (All Campaigns)
+              </h3>
+              <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">
+                Hover any country to see total emails sent, delivery success rate, and tracked recipients for that country.
+                This map always shows <span className="font-semibold">overall</span> performance across all campaigns (ignores the campaign filter above).
+              </p>
+              <div className="w-full max-w-5xl mx-auto h-[24rem] sm:h-[28rem] lg:h-[36rem]">
+                <ComposableMap
+                  projectionConfig={{ scale: 175 }}
+                  className="w-full h-full"
+                >
+                  <Geographies geography={geoUrl}>
+                    {({ geographies }: any) =>
+                      geographies.map((geo: any) => {
+                        const name: string = geo.properties.name || geo.properties.NAME || '';
+
+                        // Normalize helper to make matching more robust
+                        const normalizeName = (value: string) =>
+                          value.toLowerCase().replace(/[^a-z]/g, '');
+
+                        const geoKey = normalizeName(name);
+
+                        const statsForCountry =
+                          countryStats.find((c) => {
+                            const statsKey = normalizeName(c.country);
+                            // Direct normalized match
+                            if (statsKey === geoKey) return true;
+                            // Fallback: one contains the other (handles e.g. "unitedstates" vs "unitedstatesofamerica")
+                            return (
+                              statsKey.includes(geoKey) ||
+                              geoKey.includes(statsKey)
+                            );
+                          }) || null;
+                        const isSelected =
+                          !!statsForCountry &&
+                          !!selectedCountry &&
+                          selectedCountry.country === statsForCountry.country;
+
+                        const intensity = statsForCountry
+                          ? Math.min(1, statsForCountry.total_sent / 5000)
+                          : 0;
+
+                        // Base color for highlighted countries, darker if selected (works well for tap on mobile)
+                        const baseColor = statsForCountry ? '#4f46e5' : '#e5e7eb';
+                        const fillColor = statsForCountry
+                          ? isSelected
+                            ? `rgba(79,70,229,${0.75})`
+                            : `rgba(79,70,229,${0.3 + 0.4 * intensity})`
+                          : baseColor;
+
+                        return (
+                          <Geography
+                            key={geo.rsmKey}
+                            geography={geo}
+                            onMouseEnter={() => {
+                              if (hoverTimeoutRef.current !== null) {
+                                window.clearTimeout(hoverTimeoutRef.current);
+                                hoverTimeoutRef.current = null;
+                              }
+                              if (statsForCountry) {
+                                setHoveredCountry(statsForCountry);
+                              } else {
+                                setHoveredCountry(null);
+                              }
+                            }}
+                            onMouseLeave={() => {
+                              // When a country is selected by click, don't auto-hide the card on mouse leave
+                              if (selectedCountry) {
+                                return;
+                              }
+                              if (hoverTimeoutRef.current !== null) {
+                                window.clearTimeout(hoverTimeoutRef.current);
+                              }
+                              hoverTimeoutRef.current = window.setTimeout(() => {
+                                setHoveredCountry(null);
+                                hoverTimeoutRef.current = null;
+                              }, 400);
+                            }}
+                            onClick={() => {
+                              if (!statsForCountry) return;
+                              setSelectedCountry((prev) =>
+                                prev && prev.country === statsForCountry.country ? null : statsForCountry
+                              );
+                              setHoveredCountry(statsForCountry);
+                            }}
+                            style={{
+                              default: {
+                                fill: fillColor,
+                                outline: 'none',
+                                stroke: '#ffffff',
+                                strokeWidth: 0.5,
+                              },
+                              hover: {
+                                fill: statsForCountry ? (isSelected ? '#312e81' : '#4338ca') : '#d1d5db',
+                                outline: 'none',
+                                stroke: '#111827',
+                                strokeWidth: 0.8,
+                                cursor: statsForCountry ? 'pointer' : 'default',
+                              },
+                              pressed: {
+                                fill: statsForCountry ? '#312e81' : '#9ca3af',
+                                outline: 'none',
+                              },
+                            }}
+                          />
+                        );
+                      })
+                    }
+                  </Geographies>
+                </ComposableMap>
+              </div>
+            </div>
+
+            {/* Hover tooltip card */}
+            <div
+              className="w-full lg:w-64 xl:w-72 bg-gray-50 rounded-lg border border-gray-200 p-3 sm:p-4"
+              onMouseEnter={() => {
+                if (hoverTimeoutRef.current !== null) {
+                  window.clearTimeout(hoverTimeoutRef.current);
+                  hoverTimeoutRef.current = null;
+                }
+              }}
+              onMouseLeave={() => {
+                // When a country is locked in by click, keep the card visible
+                if (selectedCountry) {
+                  return;
+                }
+                if (hoverTimeoutRef.current !== null) {
+                  window.clearTimeout(hoverTimeoutRef.current);
+                }
+                hoverTimeoutRef.current = window.setTimeout(() => {
+                  setHoveredCountry(null);
+                  hoverTimeoutRef.current = null;
+                }, 400);
+              }}
+            >
+              <h4 className="text-sm sm:text-base font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                <i className="fas fa-map-marker-alt text-[#667eea]"></i>
+                {(selectedCountry || hoveredCountry)?.country || 'Hover a country'}
+              </h4>
+              {selectedCountry || hoveredCountry ? (
+                (() => {
+                  const country = selectedCountry || hoveredCountry!;
+                  return (
+                <div className="space-y-3 text-xs sm:text-sm text-gray-700">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <i className="fas fa-paper-plane text-blue-500"></i>
+                      Sent
+                    </span>
+                    <span className="font-semibold">
+                      {formatNumber(country.total_sent)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <i className="fas fa-times-circle text-red-500"></i>
+                      Failed
+                    </span>
+                      <span className="font-semibold">
+                      {formatNumber(country.total_failed)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <i className="fas fa-percentage text-green-500"></i>
+                      Success Rate
+                    </span>
+                    <span className="font-semibold">
+                      {country.success_rate.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <i className="fas fa-user-check text-emerald-500"></i>
+                      Tracked Emails
+                    </span>
+                    <span className="font-semibold">
+                      {formatNumber(country.tracked_emails)}
+                    </span>
+                  </div>
+                  <div className="border-t border-gray-200 pt-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="flex items-center gap-1">
+                        <i className="fas fa-flag text-indigo-500"></i>
+                        States Covered
+                      </span>
+                      <span className="font-semibold">
+                        {country.states.length}
+                      </span>
+                    </div>
+                    {country.states.length > 0 && (
+                      <ul className="mt-1 space-y-1 max-h-28 overflow-y-auto pr-1">
+                        {country.states.slice(0, 5).map((state) => (
+                          <li key={state.name} className="flex items-center justify-between">
+                            <span className="truncate">{state.name}</span>
+                            <span className="text-[11px] text-gray-600 ml-2">
+                              {formatNumber(state.total_sent)} sent, {state.success_rate.toFixed(1)}%
+                            </span>
+                          </li>
+                        ))}
+                        {country.states.length > 5 && (
+                          <li className="text-[11px] text-gray-500">
+                            +{country.states.length - 5} more states
+                          </li>
+                        )}
+                      </ul>
+                    )}
+                  </div>
+                  <div className="border-t border-gray-200 pt-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="flex items-center gap-1">
+                        <i className="fas fa-city text-purple-500"></i>
+                        Cities Covered
+                      </span>
+                      <span className="font-semibold">
+                        {country.cities.length}
+                      </span>
+                    </div>
+                    {country.cities.length > 0 && (
+                      <ul className="mt-1 space-y-1 max-h-28 overflow-y-auto pr-1">
+                        {country.cities.slice(0, 5).map((city) => (
+                          <li key={city.name} className="flex items-center justify-between">
+                            <span className="truncate">{city.name}</span>
+                            <span className="text-[11px] text-gray-600 ml-2">
+                              {formatNumber(city.total_sent)} sent, {city.success_rate.toFixed(1)}%
+                            </span>
+                          </li>
+                        ))}
+                        {country.cities.length > 5 && (
+                          <li className="text-[11px] text-gray-500">
+                            +{country.cities.length - 5} more cities
+                          </li>
+                        )}
+                      </ul>
+                    )}
+                  </div>
+                  {(country.states.length > 0 || country.cities.length > 0) && (
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setLocationModalCountry(country)}
+                        className="w-full mt-1 inline-flex items-center justify-center px-3 py-1.5 text-[11px] sm:text-xs font-medium rounded-md border border-[#667eea] text-[#667eea] hover:bg-[#667eea] hover:text-white transition-colors"
+                      >
+                        <i className="fas fa-list-ul mr-1"></i>
+                        View all locations
+                      </button>
+                    </div>
+                  )}
+                </div>
+                  );
+                })()
+              ) : (
+                <p className="text-xs sm:text-sm text-gray-500">
+                  Move your cursor over a highlighted country on the map to see how many emails you&apos;ve sent there,
+                  how many succeeded, how many recipients generated tracking events, and which states &amp; cities you&apos;ve covered.
+                </p>
+              )}
+            </div>
           </div>
-        ) : filteredCampaigns.length === 0 ? (
-          <div className="text-center py-8 sm:py-12 text-gray-500">
-            <i className="fas fa-inbox text-3xl sm:text-4xl mb-2 sm:mb-4"></i>
-            <p className="text-sm sm:text-base">{selectedCampaignId === 'all' ? 'No campaigns yet' : 'No campaign selected'}</p>
+        </section>
+      )}
+
+      {/* World Map - Full Locations Modal */}
+      {locationModalCountry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-3 sm:px-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="flex items-start justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+              <div>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <i className="fas fa-globe-americas text-[#667eea]"></i>
+                  {locationModalCountry.country} – All Locations
+                </h3>
+                <p className="text-xs sm:text-sm text-gray-500">
+                  Detailed breakdown of every state and city where you&apos;ve run campaigns in this country.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLocationModalCountry(null)}
+                className="ml-3 text-gray-400 hover:text-gray-600"
+              >
+                <i className="fas fa-times text-lg"></i>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5 space-y-5">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+                {/* States table */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm sm:text-base font-semibold text-gray-800 flex items-center gap-2">
+                      <i className="fas fa-flag text-indigo-500"></i>
+                      States ({locationModalCountry.states.length})
+                    </h4>
+                  </div>
+                  {locationModalCountry.states.length === 0 ? (
+                    <p className="text-xs sm:text-sm text-gray-500">
+                      No states recorded for this country yet.
+                    </p>
+                  ) : (
+                    <div className="border border-gray-200 rounded-lg overflow-hidden">
+                      <table className="min-w-full text-xs sm:text-sm">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-3 py-2 text-left font-medium text-gray-700">State</th>
+                            <th className="px-3 py-2 text-right font-medium text-gray-700">Sent</th>
+                            <th className="px-3 py-2 text-right font-medium text-gray-700">Failed</th>
+                            <th className="px-3 py-2 text-right font-medium text-gray-700">Success %</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {locationModalCountry.states.map((state) => (
+                            <tr key={state.name} className="hover:bg-gray-50">
+                              <td className="px-3 py-2 whitespace-nowrap">{state.name}</td>
+                              <td className="px-3 py-2 text-right">
+                                {formatNumber(state.total_sent)}
+                              </td>
+                              <td className="px-3 py-2 text-right">
+                                {formatNumber(state.total_failed)}
+                              </td>
+                              <td className="px-3 py-2 text-right">
+                                {state.success_rate.toFixed(1)}%
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Cities table */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm sm:text-base font-semibold text-gray-800 flex items-center gap-2">
+                      <i className="fas fa-city text-purple-500"></i>
+                      Cities ({locationModalCountry.cities.length})
+                    </h4>
+                  </div>
+                  {locationModalCountry.cities.length === 0 ? (
+                    <p className="text-xs sm:text-sm text-gray-500">
+                      No cities recorded for this country yet.
+                    </p>
+                  ) : (
+                    <div className="border border-gray-200 rounded-lg overflow-hidden">
+                      <table className="min-w-full text-xs sm:text-sm">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-3 py-2 text-left font-medium text-gray-700">City</th>
+                            <th className="px-3 py-2 text-right font-medium text-gray-700">Sent</th>
+                            <th className="px-3 py-2 text-right font-medium text-gray-700">Failed</th>
+                            <th className="px-3 py-2 text-right font-medium text-gray-700">Success %</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {locationModalCountry.cities.map((city) => (
+                            <tr key={city.name} className="hover:bg-gray-50">
+                              <td className="px-3 py-2 whitespace-nowrap">{city.name}</td>
+                              <td className="px-3 py-2 text-right">
+                                {formatNumber(city.total_sent)}
+                              </td>
+                              <td className="px-3 py-2 text-right">
+                                {formatNumber(city.total_failed)}
+                              </td>
+                              <td className="px-3 py-2 text-right">
+                                {city.success_rate.toFixed(1)}%
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end px-4 sm:px-6 py-3 border-t border-gray-200 bg-gray-50">
+              <button
+                type="button"
+                onClick={() => setLocationModalCountry(null)}
+                className="inline-flex items-center px-4 py-2 text-xs sm:text-sm font-medium rounded-md bg-[#667eea] text-white hover:bg-[#5568d3] transition-colors"
+              >
+                Close
+              </button>
+            </div>
           </div>
-        ) : (
-          <div className="space-y-3 sm:space-y-4">
-            {filteredCampaigns.map((campaign) => {
+        </div>
+      )}
+
+      {/* Campaign Performance - only for specific campaign (not All Campaigns) */}
+      {selectedCampaignId !== 'all' && (
+        <section className="bg-white rounded-xl shadow-md p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 sm:mb-6 flex items-center gap-2">
+            <i className="fas fa-chart-bar"></i> Campaign Performance
+          </h2>
+          
+          {loading ? (
+            <div className="text-center py-6 sm:py-8">
+              <i className="fas fa-spinner fa-spin text-xl sm:text-2xl text-gray-400"></i>
+            </div>
+          ) : filteredCampaigns.length === 0 ? (
+            <div className="text-center py-8 sm:py-12 text-gray-500">
+              <i className="fas fa-inbox text-3xl sm:text-4xl mb-2 sm:mb-4"></i>
+              <p className="text-sm sm:text-base">No campaign selected</p>
+            </div>
+          ) : (
+            <div className="space-y-3 sm:space-y-4">
+              {filteredCampaigns.map((campaign) => {
               const campaignStats = campaign.stats || { total_leads: 0, total_sent: 0, total_failed: 0 };
               const totalSent = campaignStats.total_sent || 0;
               const totalFailed = campaignStats.total_failed || 0;
@@ -764,13 +1316,14 @@ export const Analytics = () => {
                         {formatNumber(totalSent)} / {formatNumber(totalLeads)} sent ({progress}%)
                       </p>
                     </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
     </Layout>
   );
 };

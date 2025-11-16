@@ -700,6 +700,9 @@ def create_campaign():
         data = request.json
         name = data.get('name')
         description = data.get('description', '')
+        country = data.get('country', '')
+        state = data.get('state', '')
+        city = data.get('city', '')
         
         if not name:
             return jsonify({'success': False, 'message': 'Campaign name required'}), 400
@@ -715,6 +718,9 @@ def create_campaign():
             'id': campaign_id,
             'name': name,
             'description': description,
+            'country': country,
+            'state': state,
+            'city': city,
             'created_at': datetime.now().isoformat(),
             'status': 'draft',
             'selected_senders': [],
@@ -761,6 +767,12 @@ def update_campaign(campaign_id):
             campaign['name'] = data['name']
         if 'description' in data:
             campaign['description'] = data['description']
+        if 'country' in data:
+            campaign['country'] = data['country']
+        if 'state' in data:
+            campaign['state'] = data['state']
+        if 'city' in data:
+            campaign['city'] = data['city']
         if 'selected_senders' in data:
             campaign['selected_senders'] = data['selected_senders']
         if 'subject_line' in data:

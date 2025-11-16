@@ -168,9 +168,9 @@ export const campaignsApi = {
     // Backend returns { success: true, campaign: {...} } directly
     return apiRequest(`/campaigns/${campaignId}`);
   },
-  createCampaign: async (name: string, description: string): Promise<ApiResponse<{ campaign: Campaign }> & { campaign?: Campaign }> => {
+  createCampaign: async (name: string, description: string, country?: string, state?: string, city?: string): Promise<ApiResponse<{ campaign: Campaign }> & { campaign?: Campaign }> => {
     // Backend returns { success: true, campaign: {...} } directly
-    return apiRequest('/campaigns', 'POST', { name, description });
+    return apiRequest('/campaigns', 'POST', { name, description, country, state, city });
   },
   updateCampaign: async (campaignId: string, campaignData: Partial<Campaign>): Promise<ApiResponse<void>> => {
     return apiRequest(`/campaigns/${campaignId}`, 'PUT', campaignData);

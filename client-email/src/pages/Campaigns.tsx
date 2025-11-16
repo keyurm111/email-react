@@ -156,21 +156,21 @@ export const Campaigns = () => {
 
   // Filter countries based on search (must start with search term)
   const filteredCountries = countrySearch.trim()
-    ? countries.filter((country) =>
+    ? countries.filter((country: any) =>
         country.name.toLowerCase().startsWith(countrySearch.toLowerCase())
       )
     : [];
 
   // Filter states based on search (must start with search term)
   const filteredStates = stateSearch.trim()
-    ? states.filter((state) =>
+    ? states.filter((state: any) =>
         state.name.toLowerCase().startsWith(stateSearch.toLowerCase())
       )
     : [];
 
   // Filter cities based on search (must start with search term)
   const filteredCities = citySearch.trim()
-    ? cities.filter((city) =>
+    ? cities.filter((city: any) =>
         city.name.toLowerCase().startsWith(citySearch.toLowerCase())
       )
     : [];
@@ -185,7 +185,7 @@ export const Campaigns = () => {
       const countryStates = State.getStatesOfCountry(country.isoCode);
       for (const state of countryStates.slice(0, 20)) { // Limit states per country
         const stateCities = City.getCitiesOfState(country.isoCode, state.isoCode);
-        const foundCity = stateCities.find(c => 
+        const foundCity = stateCities.find((c: any) => 
           c.name.toLowerCase() === cityName.toLowerCase().trim()
         );
         if (foundCity) {
@@ -384,12 +384,12 @@ export const Campaigns = () => {
   // Filter dropdown options using Country/State/City library,
   // but only for locations that actually exist on campaigns
   const allCountriesLib = Country.getAllCountries();
-  const filterCountries = allCountriesLib.filter((country) =>
+  const filterCountries = allCountriesLib.filter((country: any) =>
     usedCountryNames.includes(country.name)
   );
 
   const filteredFilterCountries = filterCountrySearch.trim()
-    ? filterCountries.filter((country) =>
+    ? filterCountries.filter((country: any) =>
         country.name.toLowerCase().startsWith(filterCountrySearch.toLowerCase())
       )
     : filterCountries;
@@ -397,10 +397,10 @@ export const Campaigns = () => {
   let filterStates: { name: string; isoCode: string }[] = [];
 
   if (filterCountry) {
-    const countryObj = allCountriesLib.find((c) => c.name === filterCountry);
+    const countryObj = allCountriesLib.find((c: any) => c.name === filterCountry);
     if (countryObj) {
       const usedStates = usedStateNamesByCountry(filterCountry);
-      filterStates = State.getStatesOfCountry(countryObj.isoCode).filter((state) =>
+      filterStates = State.getStatesOfCountry(countryObj.isoCode).filter((state: any) =>
         usedStates.has(state.name)
       );
     }
@@ -555,7 +555,7 @@ export const Campaigns = () => {
                     )}
                     {showCountryDropdown && countrySearch.trim() && filteredCountries.length > 0 && (
                       <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                        {filteredCountries.slice(0, 10).map((country) => (
+                        {filteredCountries.slice(0, 10).map((country: any) => (
                           <button
                             key={country.isoCode}
                             type="button"
@@ -623,7 +623,7 @@ export const Campaigns = () => {
                     )}
                     {showStateDropdown && selectedCountry && stateSearch.trim() && filteredStates.length > 0 && (
                       <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                        {filteredStates.slice(0, 10).map((state) => (
+                        {filteredStates.slice(0, 10).map((state: any) => (
                           <button
                             key={state.isoCode}
                             type="button"
@@ -716,7 +716,7 @@ export const Campaigns = () => {
                             if (matchingCities.length > 0) {
                               return (
                                 <>
-                                  {matchingCities.map((city, index) => (
+                                {matchingCities.map((city: any, index: number) => (
                                     <button
                                       key={`${city.name}-${index}`}
                                       type="button"
@@ -774,7 +774,7 @@ export const Campaigns = () => {
                                         const countryStates = State.getStatesOfCountry(country.isoCode);
                                         for (const state of countryStates) {
                                           const stateCities = City.getCitiesOfState(country.isoCode, state.isoCode);
-                                          const foundCity = stateCities.find(c => c.name === city.name);
+                                          const foundCity = stateCities.find((c: any) => c.name === city.name);
                                           if (foundCity) {
                                             setSelectedCountry(country.isoCode);
                                             setSelectedState(state.isoCode);

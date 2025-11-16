@@ -362,18 +362,6 @@ export const Campaigns = () => {
         .filter((v) => v.length > 0)
     );
 
-  const usedCityNamesByCountryState = (countryName: string, stateName: string) =>
-    new Set(
-      campaigns
-        .filter(
-          (c) =>
-            (c.country || '').trim() === countryName &&
-            (c.state || '').trim() === stateName
-        )
-        .map((c) => (c.city || '').trim())
-        .filter((v) => v.length > 0)
-    );
-
   // Unique (country, state, city) combinations used in campaigns
   const usedLocationTriples = Array.from(
     new Map(
@@ -407,12 +395,10 @@ export const Campaigns = () => {
     : filterCountries;
 
   let filterStates: { name: string; isoCode: string }[] = [];
-  let selectedFilterCountryIso: string | null = null;
 
   if (filterCountry) {
     const countryObj = allCountriesLib.find((c) => c.name === filterCountry);
     if (countryObj) {
-      selectedFilterCountryIso = countryObj.isoCode;
       const usedStates = usedStateNamesByCountry(filterCountry);
       filterStates = State.getStatesOfCountry(countryObj.isoCode).filter((state) =>
         usedStates.has(state.name)
@@ -919,7 +905,7 @@ export const Campaigns = () => {
                   <div className="absolute z-40 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                     {filteredFilterCountries.map((country) => (
                       <button
-                        key={country}
+                        key={country.isoCode}
                         type="button"
                         onClick={() => {
                           setFilterCountry(country.name);

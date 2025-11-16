@@ -148,6 +148,22 @@ export const Tracker = () => {
       }))
     : events.filter((e) => e.event_type === 'click');
 
+  // Helper: split timestamp into separate time and date strings
+  const getTimeAndDate = (timestamp: string) => {
+    const d = new Date(timestamp);
+    const time = d.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+    const date = d.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+    return { time, date };
+  };
+
   // Filter campaigns for search in dropdown
   const filteredCampaignOptions = campaigns.filter((campaign) => {
     if (!campaignSearchQuery.trim()) return true;
@@ -308,15 +324,18 @@ export const Tracker = () => {
                 <h3 className="text-base sm:text-lg font-semibold">📊 Email Opens</h3>
                 <button
                   onClick={() => {
-                    const opensTable = opensData.map((e: TrackerEvent) => ({
-                      Email: e.email,
-                      Name: e.name || 'N/A',
-                      Instagram: e.instagram || 'N/A',
-                      Time: formatDate(e.timestamp).split(' ')[1] || 'N/A',
-                      Date: formatDate(e.timestamp).split(' ')[0] || 'N/A',
-                      'Open Count': e.open_count || 1,
-                      'Last Open': e.last_open || formatDate(e.timestamp)
-                    }));
+                    const opensTable = opensData.map((e: TrackerEvent) => {
+                      const { time, date } = getTimeAndDate(e.timestamp);
+                      return {
+                        Email: e.email,
+                        Name: e.name || 'N/A',
+                        Instagram: e.instagram || 'N/A',
+                        Time: time,
+                        Date: date,
+                        'Open Count': e.open_count || 1,
+                        'Last Open': e.last_open || formatDate(e.timestamp),
+                      };
+                    });
                     downloadCSV(opensTable, `${selectedCampaign}_tracking.csv`);
                   }}
                   className="w-full sm:w-auto px-3 py-1.5 sm:py-1 text-xs sm:text-sm bg-[#667eea] text-white rounded hover:opacity-90 flex items-center justify-center gap-1 sm:gap-2"
@@ -344,8 +363,12 @@ export const Tracker = () => {
                           <td className="px-2 sm:px-4 py-2 break-words">{event.email}</td>
                           <td className="px-2 sm:px-4 py-2">{event.name || 'N/A'}</td>
                           <td className="px-2 sm:px-4 py-2">{event.instagram || 'N/A'}</td>
-                          <td className="px-2 sm:px-4 py-2 whitespace-nowrap">{formatDate(event.timestamp).split(' ')[1] || 'N/A'}</td>
-                          <td className="px-2 sm:px-4 py-2 whitespace-nowrap">{formatDate(event.timestamp).split(' ')[0] || 'N/A'}</td>
+                          <td className="px-2 sm:px-4 py-2 whitespace-nowrap">
+                            {getTimeAndDate(event.timestamp).time}
+                          </td>
+                          <td className="px-2 sm:px-4 py-2 whitespace-nowrap">
+                            {getTimeAndDate(event.timestamp).date}
+                          </td>
                           <td className="px-2 sm:px-4 py-2">{(event as any).open_count || 1}</td>
                           <td className="px-2 sm:px-4 py-2 whitespace-nowrap">{(event as any).last_open || formatDate(event.timestamp)}</td>
                         </tr>
@@ -364,14 +387,17 @@ export const Tracker = () => {
                 <h3 className="text-base sm:text-lg font-semibold">🔗 Link Clicks</h3>
                 <button
                   onClick={() => {
-                    const clicksTable = clicksData.map((e: TrackerEvent) => ({
-                      Email: e.email,
-                      Name: e.name || 'N/A',
-                      Instagram: e.instagram || 'N/A',
-                      Time: formatDate(e.timestamp).split(' ')[1] || 'N/A',
-                      Date: formatDate(e.timestamp).split(' ')[0] || 'N/A',
-                      'Clicked URL': e.link_url || 'N/A'
-                    }));
+                    const clicksTable = clicksData.map((e: TrackerEvent) => {
+                      const { time, date } = getTimeAndDate(e.timestamp);
+                      return {
+                        Email: e.email,
+                        Name: e.name || 'N/A',
+                        Instagram: e.instagram || 'N/A',
+                        Time: time,
+                        Date: date,
+                        'Clicked URL': e.link_url || 'N/A',
+                      };
+                    });
                     downloadCSV(clicksTable, `${selectedCampaign}_clicks.csv`);
                   }}
                   className="w-full sm:w-auto px-3 py-1.5 sm:py-1 text-xs sm:text-sm bg-[#667eea] text-white rounded hover:opacity-90 flex items-center justify-center gap-1 sm:gap-2"
@@ -398,8 +424,12 @@ export const Tracker = () => {
                           <td className="px-2 sm:px-4 py-2 break-words">{event.email}</td>
                           <td className="px-2 sm:px-4 py-2">{event.name || 'N/A'}</td>
                           <td className="px-2 sm:px-4 py-2">{event.instagram || 'N/A'}</td>
-                          <td className="px-2 sm:px-4 py-2 whitespace-nowrap">{formatDate(event.timestamp).split(' ')[1] || 'N/A'}</td>
-                          <td className="px-2 sm:px-4 py-2 whitespace-nowrap">{formatDate(event.timestamp).split(' ')[0] || 'N/A'}</td>
+                          <td className="px-2 sm:px-4 py-2 whitespace-nowrap">
+                            {getTimeAndDate(event.timestamp).time}
+                          </td>
+                          <td className="px-2 sm:px-4 py-2 whitespace-nowrap">
+                            {getTimeAndDate(event.timestamp).date}
+                          </td>
                           <td className="px-2 sm:px-4 py-2 break-all max-w-[200px] sm:max-w-none">{event.link_url || 'N/A'}</td>
                         </tr>
                       ))}
@@ -488,16 +518,19 @@ export const Tracker = () => {
             {events.length > 0 && (
               <button
                 onClick={() => {
-                  const tableData = events.map(e => ({
-                    Email: e.email,
-                    Name: e.name || 'N/A',
-                    UID: e.uid || e.campaign || 'N/A',
-                    Instagram: e.instagram || 'N/A',
-                    Time: formatDate(e.timestamp).split(' ')[1] || 'N/A',
-                    Date: formatDate(e.timestamp).split(' ')[0] || 'N/A',
-                    'Open Count': (e as any).open_count || ((e as any).event_type === 'open' ? 1 : 0),
-                    'Last Open': (e as any).last_open || ((e as any).event_type === 'open' ? formatDate(e.timestamp) : 'N/A')
-                  }));
+                  const tableData = events.map(e => {
+                    const { time, date } = getTimeAndDate(e.timestamp);
+                    return {
+                      Email: e.email,
+                      Name: e.name || 'N/A',
+                      UID: e.uid || e.campaign || 'N/A',
+                      Instagram: e.instagram || 'N/A',
+                      Time: time,
+                      Date: date,
+                      'Open Count': (e as any).open_count || ((e as any).event_type === 'open' ? 1 : 0),
+                      'Last Open': (e as any).last_open || ((e as any).event_type === 'open' ? formatDate(e.timestamp) : 'N/A'),
+                    };
+                  });
                   downloadCSV(tableData, `${selectedCampaign}_campaign_table.csv`);
                 }}
                 className="w-full sm:w-auto px-3 py-1.5 sm:py-1 text-xs sm:text-sm bg-[#667eea] text-white rounded hover:opacity-90 flex items-center justify-center gap-1 sm:gap-2"
